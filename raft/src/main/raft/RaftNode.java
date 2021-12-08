@@ -16,6 +16,7 @@ import lvc.cds.raft.proto.AppendEntriesMessage;
 import lvc.cds.raft.proto.RaftRPCGrpc;
 import lvc.cds.raft.proto.Response;
 import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCStub;
+import java.util.Random;
 
 public class RaftNode {
     public enum NODE_STATE {
@@ -23,11 +24,15 @@ public class RaftNode {
     }
 
     private ConcurrentLinkedQueue<Message> messages;
+    private ArrayList<Command> log;
 
     private NODE_STATE state;
     private Server rpcServer;
     private Map<String, PeerStub> peers;
     private boolean peersConnected;
+    private int commitIndex;
+    private int lastApplied;
+
 
     protected int port;
 
@@ -44,6 +49,9 @@ public class RaftNode {
         }
         // lazily connect to peers.
         this.peersConnected = false;
+        log = new ArrayList<>();
+        commitIndex = 0;
+        lastApplied = 0;
         
         this.state = NODE_STATE.FOLLOWER;
         
@@ -128,15 +136,23 @@ public class RaftNode {
     }
 
     private NODE_STATE follower() {
+        Random rand = new Random();
+        long heartbeat = 10000 + rand.nextInt(50);
+        long start = System.currentTimeMillis();
         // an event loop that processes incoming messages and timeout events
         // according to the raft rules for followers.
 
         while (true) {
-            try {
+            heartbeat = 10000 + rand.nextInt(50);
+            if(System.currentTimeMillis() - start > heartbeat)
+            {
+                return NODE_STATE.CANDIDATE;
+            }
+            /*try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            }
+            }*/
 
             // first, see if there are incoming messages or replies
             // to process
@@ -149,14 +165,17 @@ public class RaftNode {
                 System.out.println(m.msg);
             }
 
-            // If we haven't connected yet...
-            if (!peersConnected)
-                connectRpcChannels();
+            //can we commit any new logs?
+            //if(commitIndex < log.size())
 
-            // send a message to every peer
-            for (var peer : peers.values()) {
-                peer.sendAppendEntries(-1, -1, -1, -1, -1, -1);
-            }
+            //can we apply any new logs?
+            //if(commitIndex > lastApplied)
+
+            // If we haven't connected yet...
+            /*if (!peersConnected)
+                connectRpcChannels();*/
+
+
         }
         return NODE_STATE.CANDIDATE;
     }
@@ -165,6 +184,19 @@ public class RaftNode {
         // any setup that is needed before we start out event loop as we just
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
+        int[] nextIndex = new int[peers.size()];
+        int[] matchIndex = new int[peers.size()];
+        for(int i: nextIndex)
+            i = log.size();
+        for(int i: matchIndex)
+            i = 0;
+
+        long heartbeat = 5000;
+        long newMessages = 1000;
+        long[] time = new long[peers.size()];
+        for(long t: time)
+            t = System.currentTimeMillis();
+
 
         // notes: We have decisions to make regarding things like: how many queues do
         // we want (one is workable, but several (e.g., one for client messages, one 
@@ -211,68 +243,16 @@ public class RaftNode {
         return NODE_STATE.LEADER;
     }
 
-    private static class PeerStub {
-        ConcurrentLinkedQueue<Message> messages;
-        String peer;
-        int port;
 
-        ManagedChannel channel;
-        RaftRPCStub stub;
-
-        PeerStub(String peer, int port, ConcurrentLinkedQueue<Message> messages) {
-            this.peer = peer;
-            this.port = port;
-            this.channel = null;
-            this.stub = null;
-            this.messages = messages;
-        }
-
-        void connect() {
-            channel = ManagedChannelBuilder.forAddress(peer, port).usePlaintext().build();
-            stub = RaftRPCGrpc.newStub(channel);
-        }
-
-        RaftRPCStub getStub() {
-            return stub;
-        }
-
-        void shutdown() throws InterruptedException {
-            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-        }
-
-        void sendAppendEntries(int term, int prevLogIdx, int prevLogTerm,
-                            int logEntryStart, int numLogs, int leaderCommitIndex) {
-            AppendEntriesMessage request = AppendEntriesMessage.newBuilder()
-            .setTerm(-1).setLeaderID("leaderID")
-            .setPrevLogIdx(-1).setPrevLogTerm(-1)
-            .addEntries("log entry 0").addEntries("log entry 1")
-            .setLeaderCommitIdx(-1)
-            .build();
-
-            getStub().appendEntries(request, new StreamObserver<Response>() {
-                @Override
-                public void onNext(Response value) {
-                    // we have the peer string (IP address) available here.
-                    String msg = "reply from " + peer + " " + value.getTerm() + " " + value.getSuccess();
-                    messages.add(new Message(msg));
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    messages.add(new Message("error handling response"));
-                }
-
-                @Override
-                public void onCompleted() {
-                    System.err.println("stream observer onCompleted");
-                }
-            });
-
-
-        }
-
-        void sendRequestVote() {
-
-        }
+    public boolean committedLog(int index)
+    {
+        //write log to file
     }
+
+    public boolean commitState(int currentTerm, String votedFor)
+    {
+        //write to file
+    }
+
+    
 }
