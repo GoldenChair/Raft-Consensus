@@ -137,7 +137,7 @@ public class RaftNode {
 
     private NODE_STATE follower() {
         Random rand = new Random();
-        long heartbeat = 10000 + rand.nextInt(50);
+        long heartbeat;
         long start = System.currentTimeMillis();
         // an event loop that processes incoming messages and timeout events
         // according to the raft rules for followers.

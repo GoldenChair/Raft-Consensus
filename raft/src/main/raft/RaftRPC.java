@@ -1,6 +1,7 @@
 package lvc.cds.raft;
 
 import lvc.cds.raft.proto.*;
+import lvc.cds.raft.proto.AppendEntriesMessage;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -17,13 +18,10 @@ public class RaftRPC extends RaftRPCImplBase {
 
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
-        String msg = "" + req.getTerm() + " " + req.getLeaderCommitIdx() + " "
-                    + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + "\n"
-                    + req.getLeaderID() + "\n"
-                    + req.getEntries(0) + " "
-                + req.getEntries(1);
+        String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + " " + req.getEntries() + "\n" + req.getLeaderCommitIdx();
 
-        messages.add(new Message(msg));
+
+        messages.add(new AppendEntriesMessage(msg));
         
         Response reply = Response.newBuilder().setSuccess(false).setTerm(-1).build();
         responseObserver.onNext(reply);
