@@ -10,15 +10,19 @@ import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCImplBase;
 
 public class RaftRPC extends RaftRPCImplBase {
     ConcurrentLinkedQueue<Message> messages;
+    private int term;
+    private int prevLogIdx;
+    private int prevLogTerm;
 
 
-    public RaftRPC(ConcurrentLinkedQueue<Message> messages) {
+    public RaftRPC(ConcurrentLinkedQueue<Message> messages, int term) {
         this.messages = messages;
-    }
+        this.term = term;
+    } 
 
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
-        String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + " " + req.getEntries() + "\n" + req.getLeaderCommitIdx();
+        String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + " " + req.getAllEntries() + "  " + req.getLeaderCommitIdx();
 
 
         messages.add(new AppendEntriesMessage(msg));
@@ -35,6 +39,11 @@ public class RaftRPC extends RaftRPCImplBase {
         Response reply = Response.newBuilder().setSuccess(false).setTerm(-1).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
+    }
+
+    public void setTerm(int t)
+    {
+        term = t;
     }
     
 

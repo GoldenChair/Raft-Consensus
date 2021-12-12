@@ -1,11 +1,21 @@
 package lvc.cds.raft;
 
 public class Message {
-    String type;
-    String msg;
+    private String type;
+    private String msg;
 
     Message(String msg, String type) {
         this.msg = msg;
+    }
+
+    public String getMsg()
+    {
+        return msg;
+    }
+
+    public String getType()
+    {
+        return type;
     }
 }
 

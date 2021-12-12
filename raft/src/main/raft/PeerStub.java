@@ -31,11 +31,11 @@ public static class PeerStub {
         channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    void sendAppendEntries(int term, String leaderId, int prevLogIdx, int prevLogTerm, String[] entries, int leaderCommitIndex) {
+    void sendAppendEntries(int term, String leaderId, int prevLogIdx, int prevLogTerm, AttayList<String> entries, int leaderCommitIndex) {
         AppendEntriesMessage request = AppendEntriesMessage.newBuilder()
         .setTerm(term).setLeaderID(leaderId)
         .setPrevLogIdx(prevLogIdx).setPrevLogTerm(prevLogTerm)
-        .addEntries(entries)
+        .addAllEntries(entries)
         .setLeaderCommitIdx(leaderCommitIndex)
         .build();
 

@@ -17,6 +17,7 @@ import lvc.cds.raft.proto.RaftRPCGrpc;
 import lvc.cds.raft.proto.Response;
 import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCStub;
 import java.util.Random;
+import java.util.Scanner;
 
 public class RaftNode {
     public enum NODE_STATE {
@@ -32,6 +33,13 @@ public class RaftNode {
     private boolean peersConnected;
     private int commitIndex;
     private int lastApplied;
+    private RaftRPC rrpc;
+    private int term;
+    private String votedFor;
+
+    private File bookKeeping;
+    private File logStorage;
+
 
 
     protected int port;
@@ -40,6 +48,7 @@ public class RaftNode {
         // incoming RPC messages come to this port
         this.port = port;
         this.messages = new ConcurrentLinkedQueue<>();
+        this.state = NODE_STATE.FOLLOWER;
 
         // a map containing stubs for communicating with each of our peers
         this.peers = new HashMap<>();
@@ -47,13 +56,56 @@ public class RaftNode {
             if (!p.equals(me))
                 this.peers.put(p, new PeerStub(p, port, messages));
         }
-        // lazily connect to peers.
+
         this.peersConnected = false;
-        log = new ArrayList<>();
+
+        //volatile
         commitIndex = 0;
         lastApplied = 0;
+
+        try{
+            bookKeeping = new File("commitedState.txt");
+            Scanner sc = new Scanner(bookKeeping);
+            term = sc.nextInt();
+            sc.nextLine();
+            votedFor = sc.nextLine();
+
+        }
+        catch(IOException e)
+        {
+            term = 0;
+            votedFor = "none";
+            createCommitState();
+        }
+
+        ArrayList<Command> log = new ArrayList<>();
+        int t;
+        int i;
+        String method;
+        String body;
+        File logStorage;
+        try{
+            logStorage = new File("committedLog.txt");
+            Scanner sc = new Scanner(logStorage);
+            while(sc.hasNextLine())
+            {
+                t = sc.nextInt();
+                i = sc.nextInt();
+                sc.nextLine();
+                method = sc.nextLine();
+                body = sc.nextLine();
+                log.add(new Command(t, i, method, body));
+            }
+
+        }
+        catch(IOException e)
+        {
+            createEmptyLog();
+        }
         
-        this.state = NODE_STATE.FOLLOWER;
+        //what else do we need to send
+        rrpc = new RaftRPC(messages, term);
+        
         
     }
 
@@ -111,7 +163,7 @@ public class RaftNode {
     private void startRpcListener() throws IOException {
         // build and start the server to listen to incoming RPC calls.
         rpcServer = ServerBuilder.forPort(port)
-                .addService(new RaftRPC(messages))
+                .addService(rrpc)
                 .build()
                 .start();
 
@@ -158,11 +210,30 @@ public class RaftNode {
             // to process
             Message m = messages.poll();
             if (m != null) {
-                if (m.msg.equals(""))
+                if (m.getMsg().equals(""))
                     break;
+                if(m.getType().equals("appendEntries"))
+                {
 
-                System.out.println("handled message");
-                System.out.println(m.msg);
+                    //if success
+                    ArrayList<Command> toAdd = m.getEntries();
+                    for(Command c: toAdd)
+                    {
+                        log.add(c);
+                        committedLog(log.size()-1);
+                        commitIndex++;
+                    }
+
+                    
+                }
+                else if(m.getType().equals("requestVote"))
+                {
+                    //verify that response is handled an dwe are granting vote
+                    votedFor = m.getCandidate();
+                    commitState(m.getTerm(), votedFor);
+                }
+
+
             }
 
             //can we commit any new logs?
@@ -246,12 +317,56 @@ public class RaftNode {
 
     public boolean committedLog(int index)
     {
-        //write log to file
+        Command c = log.get(index);
+        try {
+            FileWriter myWriter = new FileWriter("committedLog.txt", true);
+            myWriter.write("" + c.getTerm());
+            myWriter.write("\n");
+            myWriter.write("" + c.getIndex());
+            myWriter.write("\n");
+            myWriter.write("" + c.getMethod());
+            myWriter.write("\n");
+            myWriter.write("" + c.getBody());
+            myWriter.close();
+          } catch (IOException e) {
+
+          }
     }
 
     public boolean commitState(int currentTerm, String votedFor)
     {
-        //write to file
+        try {
+            FileWriter myWriter = new FileWriter("commitedState.txt");
+            myWriter.write("" + currentTerm);
+            myWriter.write("\n");
+            myWriter.write(votedFor);
+            myWriter.close();
+          } catch (IOException e) {
+
+          }
+    }
+
+    public void createCommitState()
+    {
+        try {
+            FileWriter myWriter = new FileWriter("commitedState.txt");
+            myWriter.write("0");
+            myWriter.write("\n");
+            myWriter.write("none");
+            myWriter.close();
+          } catch (IOException e) {
+
+          }
+    }
+
+    public void createEmptyLog()
+    {
+        try {
+            FileWriter myWriter = new FileWriter("committedLog.txt");
+            myWriter.close();
+          } catch (IOException e) {
+
+          }
     }
 
     
