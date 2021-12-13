@@ -2,12 +2,14 @@ package lvc.cds.raft;
 
 public class AppendEntriesMessage extends Message{
     
-    private String[] entries;
+    private String success;
     private int term;
     private String leaderId;
-    private int prevLogInd;
+    private int prevLogIdx;
     private int prevLogTerm;
     private int leaderCommitIndex;
+    private ArrayList<String> entries;
+
 
     public AppendEntriesMessage(String message)
     {
@@ -21,7 +23,7 @@ public class AppendEntriesMessage extends Message{
         subMessage = subMessage.substring(index+1);
 
         index = subMessage.indexOf(" ");
-        prevLogInd = Integer.parseInt(subMessage.substring(0,index));
+        prevLogIdx = Integer.parseInt(subMessage.substring(0,index));
         subMessage = subMessage.substring(index+1);
 
         index = subMessage.indexOf(" ");
@@ -32,10 +34,48 @@ public class AppendEntriesMessage extends Message{
         String entriesList = subMessage.substring(0,index);
         subMessage = subMessage.substring(index+2);
 
-        leaderCommitIndex = Intger.parse(subMessage);
+        index = subMessage.indexOf(" ");
+        leaderCommitIndex = Intger.parse(subMessage.substring(0, index));
+        subMessage = subMessage.substring(index+1);
+        success = subMessage;
 
 
         //break up entriesList
+    }
+
+    public int getTerm()
+    {
+        return term;
+    }
+
+    public String getLeaderId()
+    {
+        return leaderId;
+    }
+
+    public int getPrevLogIdx()
+    {
+        return prevLogIdx;
+    }
+
+    public int getPrevLogTerm()
+    {
+        return prevLogTerm;
+    }
+
+    public ArrayList<String> getAllEntries()
+    {
+        return entries;
+    }
+
+    public int getLeaderCommitIndex()
+    {
+        return leaderCommitIndex;
+    }
+
+    public String getSuccess()
+    {
+        return success;
     }
 
 }

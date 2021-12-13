@@ -37,7 +37,7 @@ public class RaftNode {
     private int term;
     private String votedFor;
 
-    private File bookKeeping;
+    private File persistentState;
     private File logStorage;
 
 
@@ -64,8 +64,8 @@ public class RaftNode {
         lastApplied = 0;
 
         try{
-            bookKeeping = new File("commitedState.txt");
-            Scanner sc = new Scanner(bookKeeping);
+            persistentState = new File("persistentState.txt");
+            Scanner sc = new Scanner(persistentState);
             term = sc.nextInt();
             sc.nextLine();
             votedFor = sc.nextLine();
@@ -75,17 +75,17 @@ public class RaftNode {
         {
             term = 0;
             votedFor = "none";
-            createCommitState();
+            createPersistentState();
         }
 
-        ArrayList<Command> log = new ArrayList<>();
+        log = new ArrayList<>();
         int t;
         int i;
         String method;
         String body;
         File logStorage;
         try{
-            logStorage = new File("committedLog.txt");
+            logStorage = new File("persistentLog.txt");
             Scanner sc = new Scanner(logStorage);
             while(sc.hasNextLine())
             {
@@ -104,7 +104,7 @@ public class RaftNode {
         }
         
         //what else do we need to send
-        rrpc = new RaftRPC(messages, term);
+        rrpc = new RaftRPC(messages, term, this);
         
         
     }
@@ -214,16 +214,28 @@ public class RaftNode {
                     break;
                 if(m.getType().equals("appendEntries"))
                 {
-
-                    //if success
-                    ArrayList<Command> toAdd = m.getEntries();
-                    for(Command c: toAdd)
+                    if(m.getSuccess.equals("false"))
                     {
-                        log.add(c);
-                        committedLog(log.size()-1);
-                        commitIndex++;
+                        //need to delete entries
                     }
-
+                    else{
+                        //if success
+                        int lastNewEntry;
+                        ArrayList<Command> toAdd = m.getEntries();
+                        for(Command c: toAdd)
+                        {
+                            log.add(c);
+                            persistentLog(log.size()-1);
+                            lastNewEntry = log.size()-1;
+                        }
+                        if(m.getLeaderCommit() > commitIndex)
+                        {
+                            if(m.getLeaderCommit() > lastNewEntry)
+                                commitIndex = lastNewEntry;
+                            else
+                            commitIndex = m.getLeaderCommit();
+                        }
+                    }
                     
                 }
                 else if(m.getType().equals("requestVote"))
@@ -315,11 +327,11 @@ public class RaftNode {
     }
 
 
-    public boolean committedLog(int index)
+    public boolean persistentLog(int index)
     {
         Command c = log.get(index);
         try {
-            FileWriter myWriter = new FileWriter("committedLog.txt", true);
+            FileWriter myWriter = new FileWriter("persistentLog.txt", true);
             myWriter.write("" + c.getTerm());
             myWriter.write("\n");
             myWriter.write("" + c.getIndex());
@@ -333,10 +345,10 @@ public class RaftNode {
           }
     }
 
-    public boolean commitState(int currentTerm, String votedFor)
+    public boolean persistentState(int currentTerm, String votedFor)
     {
         try {
-            FileWriter myWriter = new FileWriter("commitedState.txt");
+            FileWriter myWriter = new FileWriter("persistentState.txt");
             myWriter.write("" + currentTerm);
             myWriter.write("\n");
             myWriter.write(votedFor);
@@ -346,10 +358,10 @@ public class RaftNode {
           }
     }
 
-    public void createCommitState()
+    public void createPersistentState()
     {
         try {
-            FileWriter myWriter = new FileWriter("commitedState.txt");
+            FileWriter myWriter = new FileWriter("persistentState.txt");
             myWriter.write("0");
             myWriter.write("\n");
             myWriter.write("none");
@@ -362,11 +374,19 @@ public class RaftNode {
     public void createEmptyLog()
     {
         try {
-            FileWriter myWriter = new FileWriter("committedLog.txt");
+            FileWriter myWriter = new FileWriter("persistentLog.txt");
             myWriter.close();
           } catch (IOException e) {
 
           }
+    }
+
+    public String getPrevLog(int n)
+    {
+        Command c = log.get(log.size-1-n);
+        int i = c.getIndex();
+        int t = c.getTerm();
+        return (t + "," + i); 
     }
 
     

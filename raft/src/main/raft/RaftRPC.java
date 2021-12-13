@@ -11,23 +11,36 @@ import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCImplBase;
 public class RaftRPC extends RaftRPCImplBase {
     ConcurrentLinkedQueue<Message> messages;
     private int term;
-    private int prevLogIdx;
-    private int prevLogTerm;
+    private RaftNode node;
 
 
-    public RaftRPC(ConcurrentLinkedQueue<Message> messages, int term) {
+    public RaftRPC(ConcurrentLinkedQueue<Message> messages, int term, RaftNode node) {
         this.messages = messages;
         this.term = term;
+        this.node = node;
     } 
 
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
+        
+        String success = true;
+        boolean addMessage = true;
+
         String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + " " + req.getAllEntries() + "  " + req.getLeaderCommitIdx();
 
+        if(term > req.getTerm())
+        {
+            success = false;
+            addMessage = false;
+        }
 
-        messages.add(new AppendEntriesMessage(msg));
+        //find prevLog or find that we need to delete
+
         
-        Response reply = Response.newBuilder().setSuccess(false).setTerm(-1).build();
+        if(addMessage)
+            messages.add(new AppendEntriesMessage(msg));
+        
+        Response reply = Response.newBuilder().setSuccess(false).setTerm(term).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
     }
