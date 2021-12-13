@@ -61,7 +61,29 @@ public static class PeerStub {
 
     }
 
-    void sendRequestVote() {
+    void sendRequestVote(int term, String candidateId, int lastLogIdx, int lastLogTerm) {
+        RequestVoteMessage request = RequestVoteMessage.newBuilder()
+        .setTerm(term).setCandidateID(candidateId)
+        .setLastLogIdx(lastLogIdx).setLastLogTerm(lastLogTerm)
+        .build();
 
+        getStub().requestVote(request, new StreamObserver<Response>() {
+            @Override
+            public void onNext(Response value) {
+                // we have the peer string (IP address) available here.
+                String msg = "reply from " + peer + " " + value.getTerm() + " " + value.getSuccess();
+                messages.add(new Message(msg));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                messages.add(new Message("error handling response"));
+            }
+
+            @Override
+            public void onCompleted() {
+                System.err.println("stream observer onCompleted");
+            }
+        });
     }
 }

@@ -1,16 +1,16 @@
 package lvc.cds.raft;
 
-public class AppendEntriesMessage extends Message{
+public class MessageAppendEntries extends Message{
     
     private int term;
     private String leaderId;
     private int prevLogIdx;
     private int prevLogTerm;
     private int leaderCommitIndex;
-    private ArrayList<String> entries;
+    private ArrayList<Command> entries;
 
 
-    public AppendEntriesMessage(String message)
+    public MessageAppendEntries(String message)
     {
         super(message, "appendEntries");
         int index = message.indexOf(" ");
@@ -38,12 +38,32 @@ public class AppendEntriesMessage extends Message{
         subMessage = subMessage.substring(index+1);
     
 
-
+        int t;
+        int i;
+        String body;
+        String method;
         //break up entriesList
         while(entriesList.length() > 0)
         {
             index = entriesList.indexOf(":");
-            
+            i = Integer.parseInt(entriesList.substring(0, index));
+            entriesList = entriesList.substring(index+1);
+
+            index = entriesList.indexOf(":");
+            i = Integer.parseInt(entriesList.substring(0, index));
+            entriesList = entriesList.substring(index+1);
+
+            index = entriesList.indexOf(":");
+            i = Integer.parseInt(entriesList.substring(0, index));
+            entriesList = entriesList.substring(index+1);
+
+            index = entriesList.indexOf(":");
+            if(index > -1)
+                body = Integer.parseInt(entriesList.substring(0, index));
+            entriesList = entriesList.substring(index+1);
+
+
+            entries.add(new Command(t, i, method, body));
         }
     }
 

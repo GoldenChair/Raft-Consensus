@@ -48,19 +48,17 @@ public class RaftRPC extends RaftRPCImplBase {
         if(success)
         {
             ArrayList<String> entries = req.getAllEntries();
-            String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm();
+            String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + pli + " " + plt;
             for(String s: entries)
             {
                 msg += ":" + s;
             }
             
             msg += "  " + req.getLeaderCommitIdx();
-            messages.add(new AppendEntriesMessage(msg));
+            messages.add(new MessageAppendEntries(msg));
         }
             
 
-        
-        
         Response reply = Response.newBuilder().setSuccess(success).setTerm(term).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
@@ -70,12 +68,23 @@ public class RaftRPC extends RaftRPCImplBase {
     public void requestVote(RequestVoteMessage req, StreamObserver<Response> responseObserver) {
         String success = false;
 
-        String msg = 
+        int lli = req.getLastLogIndex();
+        int llt = req.getLastLogTerm();
         if(term <= req.getTerm())
-        
+        {
+            Command c = node.getPrevLog(0);
+            if(c.getIndex() <= lli && c.getTerm() <= llt)
+            {
+                success = true;
+            }
+        }
 
-
-        Response reply = Response.newBuilder().setSuccess(false).setTerm(-1).build();
+        if(success)
+        {
+            String msg = req.getTerm() + " " + req.getCandidateID() + " " + lli + " " + llt;
+            messages.add(new MessageRequestVote(msg));
+        }
+        Response reply = Response.newBuilder().setSuccess(success).setTerm(term).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
     }
