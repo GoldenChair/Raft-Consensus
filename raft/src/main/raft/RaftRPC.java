@@ -23,32 +23,58 @@ public class RaftRPC extends RaftRPCImplBase {
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
         
-        String success = true;
-        boolean addMessage = true;
+        String success = false;
+        
 
-        String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + " " + req.getAllEntries() + "  " + req.getLeaderCommitIdx();
-
-        if(term > req.getTerm())
+        int pli = req.getPrevLogIdx();
+        int plt = req.getPrevLogTerm();
+        Command c;
+        if(term <= req.getTerm())
         {
-            success = false;
-            addMessage = false;
+            int size = node.getLogSize();
+            for(int i = 0; i < size; i++)
+            {
+                c = node.getPrevLog(i);
+                if(pli == c.getIndex() && plt == c.getTerm())
+                {
+                    success = true;
+                    node.deleteExtraLogs(pli);
+                    break;
+                }
+            }
+            
         }
 
-        //find prevLog or find that we need to delete
+        if(success)
+        {
+            ArrayList<String> entries = req.getAllEntries();
+            String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + req.getPrevLogIdx() + " " + req.getPrevLogTerm();
+            for(String s: entries)
+            {
+                msg += ":" + s;
+            }
+            
+            msg += "  " + req.getLeaderCommitIdx();
+            messages.add(new AppendEntriesMessage(msg));
+        }
+            
 
         
-        if(addMessage)
-            messages.add(new AppendEntriesMessage(msg));
         
-        Response reply = Response.newBuilder().setSuccess(false).setTerm(term).build();
+        Response reply = Response.newBuilder().setSuccess(success).setTerm(term).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
     }
     
     @Override
     public void requestVote(RequestVoteMessage req, StreamObserver<Response> responseObserver) {
+        String success = false;
+
+        String msg = 
+        if(term <= req.getTerm())
         
-        
+
+
         Response reply = Response.newBuilder().setSuccess(false).setTerm(-1).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();

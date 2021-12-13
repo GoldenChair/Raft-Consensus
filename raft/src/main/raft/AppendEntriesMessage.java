@@ -2,7 +2,6 @@ package lvc.cds.raft;
 
 public class AppendEntriesMessage extends Message{
     
-    private String success;
     private int term;
     private String leaderId;
     private int prevLogIdx;
@@ -26,7 +25,7 @@ public class AppendEntriesMessage extends Message{
         prevLogIdx = Integer.parseInt(subMessage.substring(0,index));
         subMessage = subMessage.substring(index+1);
 
-        index = subMessage.indexOf(" ");
+        index = subMessage.indexOf(":");
         prevLogTerm = Integer.parseInt(subMessage.substring(0,index));
         subMessage = subMessage.substring(index+1);
 
@@ -37,10 +36,15 @@ public class AppendEntriesMessage extends Message{
         index = subMessage.indexOf(" ");
         leaderCommitIndex = Intger.parse(subMessage.substring(0, index));
         subMessage = subMessage.substring(index+1);
-        success = subMessage;
+    
 
 
         //break up entriesList
+        while(entriesList.length() > 0)
+        {
+            index = entriesList.indexOf(":");
+            
+        }
     }
 
     public int getTerm()
@@ -71,11 +75,6 @@ public class AppendEntriesMessage extends Message{
     public int getLeaderCommitIndex()
     {
         return leaderCommitIndex;
-    }
-
-    public String getSuccess()
-    {
-        return success;
     }
 
 }

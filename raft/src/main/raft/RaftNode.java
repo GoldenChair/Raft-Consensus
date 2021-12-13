@@ -214,35 +214,36 @@ public class RaftNode {
                     break;
                 if(m.getType().equals("appendEntries"))
                 {
-                    if(m.getSuccess.equals("false"))
+                    //if success
+                    int lastNewEntry;
+                    if(term < m.getTerm())
                     {
-                        //need to delete entries
+                        term = m.getTerm();
+                        persistentState(term, votedFor);
+                        rrpc.setTerm(term);
                     }
-                    else{
-                        //if success
-                        int lastNewEntry;
-                        ArrayList<Command> toAdd = m.getEntries();
-                        for(Command c: toAdd)
-                        {
-                            log.add(c);
-                            persistentLog(log.size()-1);
-                            lastNewEntry = log.size()-1;
-                        }
-                        if(m.getLeaderCommit() > commitIndex)
-                        {
-                            if(m.getLeaderCommit() > lastNewEntry)
-                                commitIndex = lastNewEntry;
-                            else
+                    ArrayList<Command> toAdd = m.getEntries();
+                    for(Command c: toAdd)
+                    {
+                        log.add(c);
+                        persistentLog(log.size()-1);
+                        lastNewEntry = log.size()-1;
+                    }
+                    if(m.getLeaderCommit() > commitIndex)
+                    {
+                        if(m.getLeaderCommit() > lastNewEntry)
+                            commitIndex = lastNewEntry;
+                        else
                             commitIndex = m.getLeaderCommit();
-                        }
                     }
+                    
                     
                 }
                 else if(m.getType().equals("requestVote"))
                 {
                     //verify that response is handled an dwe are granting vote
                     votedFor = m.getCandidate();
-                    commitState(m.getTerm(), votedFor);
+                    persistentState(m.getTerm(), votedFor);
                 }
 
 
@@ -381,12 +382,22 @@ public class RaftNode {
           }
     }
 
-    public String getPrevLog(int n)
+    public Command getPrevLog(int n)
+    {      
+        return log.get(log.size-1-n); 
+    }
+
+    public void deleteExtraLogs(int n)
     {
-        Command c = log.get(log.size-1-n);
-        int i = c.getIndex();
-        int t = c.getTerm();
-        return (t + "," + i); 
+        for(int i = log.size() - 1; i > n; i--)
+        {
+            log.remove(i);
+        }
+    }
+
+    public int getLogSize()
+    {
+        return log.size();
     }
 
     
