@@ -323,8 +323,10 @@ public class RaftNode {
         while (true) {
             // step one: check out commitIndex to see if we can commit any
             // logs. As we commit logs, Increase lastApplied
-                // How to check log to see if it is committed?
-            
+            while (commitIndex > lastApplied){
+                //apply log[lastApplied + 1] to KVS
+                // lastApplied++
+            }
             // step 2: check to see if any messages or replies are present
             // if so:
             //    - if it is a request from a client, then add to our log
@@ -339,7 +341,7 @@ public class RaftNode {
             if (m != null) {
                 if (m.msg.equals(""))
                     break;
-                if (m.msg.equals("client")){// how to tell if its a client message?
+                if (m.msg.equals("clientMessage")){// how to tell if its a client message?
                     m = messages.poll();
                     log.add(new Command(term, log.size() + 1, method, body)); // how to get data from message?
                     // No confirmation to client needed
