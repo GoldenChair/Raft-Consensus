@@ -1,9 +1,10 @@
 package lvc.cds.raft;
 
 import lvc.cds.raft.proto.*;
-import lvc.cds.raft.proto.AppendEntriesMessage;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import com.google.protobuf.Message;
 
 import io.grpc.stub.StreamObserver;
 import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCImplBase;
@@ -91,9 +92,11 @@ public class RaftRPC extends RaftRPCImplBase {
         responseObserver.onCompleted();
     }
 
+    // This should recive a message from client and it to messages
+    // should be able to recieve it as clientMessage and message.poll().log
     @Override
     public void clientMessage(ClientMessage req, StreamObserver<Response> responseObserver){
-        String success = false;
+        messages.add(new ClientMessage(req.getLog()));
     }
 
 
