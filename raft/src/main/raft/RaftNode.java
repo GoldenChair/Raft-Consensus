@@ -242,8 +242,13 @@ public class RaftNode {
                 else if(m.getType().equals("requestVote"))
                 {
                     //verify that response is handled an dwe are granting vote
+                    if(m.getTerm() > term)
+                    {
+                        term = m.getTerm();
+                        rrpc.setTerm(term);
+                    }
                     votedFor = m.getCandidate();
-                    persistentState(m.getTerm(), votedFor);
+                    persistentState(term, votedFor);
                 }
 
 

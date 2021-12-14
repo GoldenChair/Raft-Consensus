@@ -32,6 +32,10 @@ public class RaftRPC extends RaftRPCImplBase {
         if(term <= req.getTerm())
         {
             int size = node.getLogSize();
+            if(size == 0)
+            {
+                //if log is empty
+            }
             for(int i = 0; i < size; i++)
             {
                 c = node.getPrevLog(i);
@@ -54,9 +58,7 @@ public class RaftRPC extends RaftRPCImplBase {
                 msg += ":" + s;
             }
             
-            msg += "  " + req.getLeaderCommitIdx();
-            messages.add(new MessageAppendEntries(msg));
-        }
+            msg += "  " + req.getLeaderpackage lvc.cds.raft;
             
 
         Response reply = Response.newBuilder().setSuccess(success).setTerm(term).build();
