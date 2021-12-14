@@ -6,12 +6,18 @@ option java_package = "lvc.cds.raft.proto";
 option java_outer_classname = "RaftProto";
 option objc_class_prefix = "Raft";
 
+import "google/protobuf/empty.proto";
 package raftproto;
 
 // messages a leader can receive
 service RaftRPC {
   rpc appendEntries (AppendEntriesMessage) returns (Response) {}
   rpc requestVote (RequestVoteMessage) returns (Response) {}
+  rpc clientRequest (ClientMessage) returns (google.protobuf.Empty) {}
+}
+
+message ClientMessage {
+  string log = 1;
 }
 
 message AppendEntriesMessage {
