@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.google.protobuf.Message;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -63,6 +65,7 @@ public class RaftNode {
         commitIndex = 0;
         lastApplied = 0;
 
+        // initial persistent state (currentTerm and votedFor) for node
         try{
             persistentState = new File("persistentState.txt");
             Scanner sc = new Scanner(persistentState);
@@ -83,7 +86,9 @@ public class RaftNode {
         int i;
         String method;
         String body;
-        File logStorage;
+        File logStorage; // Possible to remove?
+        // initial persistenLog for server
+        // when starting server all logs from pLog is added to memory.
         try{
             logStorage = new File("persistentLog.txt");
             Scanner sc = new Scanner(logStorage);
@@ -104,6 +109,7 @@ public class RaftNode {
         }
         
         //what else do we need to send
+        // do we need to send term when we have this?
         rrpc = new RaftRPC(messages, term, this);
         
         
@@ -148,6 +154,7 @@ public class RaftNode {
         for (var peer : peers.values()) {
             peer.connect();
         }
+        peersConnected = true;
     }
 
     private void shutdownRpcStubs() {
@@ -270,21 +277,37 @@ public class RaftNode {
     }
 
     private NODE_STATE leader() {
+        long start = System.currentTimeMillis();
         // any setup that is needed before we start out event loop as we just
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
+        term++;
         int[] nextIndex = new int[peers.size()];
         int[] matchIndex = new int[peers.size()];
         for(int i: nextIndex)
-            i = log.size();
+            nextIndex[i] = log.length() + 1;
         for(int i: matchIndex)
-            i = 0;
+            matchIndex[i] = 0;
 
-        long heartbeat = 5000;
-        long newMessages = 1000;
-        long[] time = new long[peers.size()];
-        for(long t: time)
-            t = System.currentTimeMillis();
+        // If we haven't connected yet...
+        if (!peersConnected)
+            connectRpcChannels();
+
+        // upon election; send initial empty AppendEntries RPC (heartbeat)
+        // Maybe create zero parameter constructer appendEntries rpc for heartbeat
+
+        // send a message to every peer for initial heartbeat
+        // heartbeat is appendEntries with no log entries
+        for (var peer : peers.values()) {
+            String[] emptyLog = new String[0];
+            peer.sendAppendEntries(term, "me", 0, 0, emptyLog, commitIndex); //heartbeatmessage. Need to check if this is correct
+        }
+
+        // long heartbeat = 5000;
+        // long newMessages = 1000;
+        // long[] time = new long[peers.size()];
+        // for(long t: time)
+        //     t = System.currentTimeMillis();
 
 
         // notes: We have decisions to make regarding things like: how many queues do
@@ -299,9 +322,9 @@ public class RaftNode {
 
         while (true) {
             // step one: check out commitIndex to see if we can commit any
-            // logs. As we commit logs, Send message to client that the job is done 
-            // for that log entry.Increase lastApplied
-            //
+            // logs. As we commit logs, Increase lastApplied
+                // How to check log to see if it is committed?
+            
             // step 2: check to see if any messages or replies are present
             // if so:
             //    - if it is a request from a client, then add to our log
@@ -312,17 +335,60 @@ public class RaftNode {
             //    - if it is anything else (e.g., a requestVote or appendEntries)  
             //      then we want to check the term, and if appropriate, convert to
             //      follower (leaving this message on the queue!)
-            // 
+            Message m = messages.peek(); // so message is left on queue if needed
+            if (m != null) {
+                if (m.msg.equals(""))
+                    break;
+                if (m.msg.equals("client")){// how to tell if its a client message?
+                    m = messages.poll();
+                    log.add(new Command(term, log.size() + 1, method, body)); // how to get data from message?
+                    // No confirmation to client needed
+                }
+                if (m.msg.equals("reponse")){
+                    m = messages.poll();
+                    if (m.term == term){
+                        matchIndex[mIndex] = mLog.size();
+                        nextIndex[mIndex] = mLog.size() + 1;
+                    }
+                }
+                if (m.msg.equals("appendEntries") || m.msg.equals("requestVote")){
+                    if (mTerm > term){ // how to keep message on the queu?
+                        state = NODE_STATE.FOLLOWER;
+                        break;
+                    }
+                    else if(mTerm == term){m = messages.poll();}// then what
+                    else{m = messages.poll();}//reply false
+                }
+
+                System.out.println("handled message");
+                System.out.println(m.msg);
+            } 
             // step 3: see if we need to send any messages out. Iterate through
             //         nextIndex and send an appendEntries message to anyone who 
             //         seems out of date. If our heartbeat timeout has expired, send
             //         a message to everyone. if we do send an appendEntries, 
             //         update the heartbeat timer.
-            //
+            for(int nodeIndex : nextIndex){
+                if (nodeIndex <= log.size()){
+                    //send appendentries rpc for that log[nodeIndex]
+                    start = System.currentTimeMillis();
+                }
+
+            }
+            if(System.currentTimeMillis() + 5000 > start)
+            {
+                //send blank appendentris rpc
+                start = System.currentTimeMillis();
+            }
             // step 4: iterate through matchIndex to see if a majority of entries
             //         are > commitIndex (with term that is current). If so, 
             //         ++commitIndex. There are more aggressive ways to do this,
             //         but this will do.
+            int counter = 0;
+            for (int mIndex : matchIndex){
+                if (mIndex > commitIndex){counter++;}
+            }
+            if (counter >= ((peers + 1)/2)+1){ commitIndex++;}
         }
     }
 
