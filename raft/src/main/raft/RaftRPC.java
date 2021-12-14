@@ -91,6 +91,12 @@ public class RaftRPC extends RaftRPCImplBase {
         responseObserver.onCompleted();
     }
 
+    @Override
+    public void clientMessage(ClientMessage req, StreamObserver<Response> responseObserver){
+        String success = false;
+    }
+
+
     public void setTerm(int t)
     {
         term = t;
