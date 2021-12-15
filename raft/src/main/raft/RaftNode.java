@@ -345,14 +345,14 @@ public class RaftNode {
                 }
                 if (m.getType().equals("appendEntriesResponse")){
                     m = messages.poll();
-                    if (m.getTerm() == term && m.getSuccess()){ // incrementing mindex, nindex, if success
+                    if (m.getSuccess()){ // incrementing mindex, nindex, if success
                         matchIndex.replace(m.getPeer(), matchIndex.get(m.getPeer()) + 1);
                         nextIndex.replace(m.getPeer(), nextIndex.get(m.getPeer()) + 1);
                     }
-                    else if (m.getTerm() == term && !m.getSuccess()){ // decrement if success is false
+                    else if (!m.getSuccess()){ // decrement if success is false
                         nextIndex.replace(m.getPeer(), nextIndex.get(m.getPeer()) - 1);
                     }
-                    else{ //TODO what happends if terms are not equal?
+                    else{ //TODO is there anything other case to account for?
 
                     }
                 }
@@ -361,8 +361,7 @@ public class RaftNode {
                         state = NODE_STATE.FOLLOWER;
                         break;
                     }
-                    //TODO what happens when terms or uqual or less then?
-                    //reply false?
+                    //TODO Does anything happen when terms or equal or less then?
                 }
 
                 System.out.println("handled message");
