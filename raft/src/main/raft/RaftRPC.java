@@ -36,7 +36,7 @@ public class RaftRPC extends RaftRPCImplBase {
         if (success){
             String leaderId = req.getLeaderID();
             int leaderCommitIndex = req.getLeaderCommitIdx();
-            ArrayList<Command> commands = new ArrayList<Command>();
+            ArrayList<Command> commands = new ArrayList<>();
             
             String msg = "" + req.getTerm() + " " + req.getLeaderID() + " "
             + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + "\n"
@@ -45,8 +45,8 @@ public class RaftRPC extends RaftRPCImplBase {
             ProtocolStringList commandFields = req.getEntriesList();
 
             // May be better way to make command using the Entries list of strings
-            for(int i = 0; i < req.getEntriesCount(); i += 4 ){ // should always be multiple of 4 as Coomand is split into 4 pieces
-                commands.add(commandFields.get(i), commandFields.get(i+1), commandFields.get(i+2), commandFields.get(i+3));
+            for(int i = 0; i < req.getEntriesCount(); i += 4 ){ // should always be multiple of 4 as Command is split into 4 pieces
+                commands.add(new Command(commandFields.get(i), commandFields.get(i+1), commandFields.get(i+2), commandFields.get(i+3)));
             }
 
             messages.add(new MessageAppendEntries(msg,term, leaderId, prevLogIdx, prevLogTerm, leaderCommitIndex, commands));
