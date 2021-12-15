@@ -327,7 +327,7 @@ public class RaftNode {
             // step one: check out commitIndex to see if we can commit any
             // logs. As we commit logs, Increase lastApplied
             while (commitIndex > lastApplied){
-                //apply log[lastApplied + 1] to KVS
+                //TODO apply log[lastApplied + 1] to KVS
                 // lastApplied++
             }
             // step 2: check to see if any messages or replies are present
@@ -494,6 +494,21 @@ public class RaftNode {
     public int getLogSize()
     {
         return log.size();
+    }
+
+    public int getTerm()
+    {
+        return term;
+    }
+
+    public boolean prevLogExist(int prevLogIndex, int prevLogTerm){
+        if (prevLogIndex > log.size()){ // greater as index starts at 1
+            return false;
+        }
+        if (log.get(prevLogIndex).getTerm() != prevLogTerm){
+            return false;
+        }
+        return true;
     }
 
     
