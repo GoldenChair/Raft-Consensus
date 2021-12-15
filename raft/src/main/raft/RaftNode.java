@@ -1,6 +1,7 @@
 package lvc.cds.raft;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class RaftNode {
     private RaftRPC rrpc;
     private int term;
     private String votedFor;
+    private String leaderId;
 
     private File persistentState;
     private File logStorage;
@@ -51,6 +53,7 @@ public class RaftNode {
         this.port = port;
         this.messages = new ConcurrentLinkedQueue<>();
         this.state = NODE_STATE.FOLLOWER;
+        this.leaderId = me;
 
         // a map containing stubs for communicating with each of our peers
         this.peers = new HashMap<>();
@@ -276,19 +279,19 @@ public class RaftNode {
         return NODE_STATE.CANDIDATE;
     }
 
+    // lo
     private NODE_STATE leader() {
         long start = System.currentTimeMillis();
         // any setup that is needed before we start out event loop as we just
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
         term++;
-        int[] nextIndex = new int[peers.size()];
-        int[] matchIndex = new int[peers.size()];
-        for(int i: nextIndex)
-            nextIndex[i] = log.length() + 1;
-        for(int i: matchIndex)
-            matchIndex[i] = 0;
-
+        Map<String, Integer> nextIndex = new HashMap<>(peers.size());
+        Map<String, Integer> matchIndex = new HashMap<>(peers.size());
+        for(String peer : peers.keySet()){
+            nextIndex.put(peer, log.size());
+            matchIndex.put(peer, 0);
+        }
         // If we haven't connected yet...
         if (!peersConnected)
             connectRpcChannels();
@@ -341,25 +344,32 @@ public class RaftNode {
             if (m != null) {
                 if (m.msg.equals(""))
                     break;
-                if (m.msg.equals("clientMessage")){// how to tell if its a client message?
+                if (m.getType().equals("client")){
                     m = messages.poll();
-                    log.add(new Command(term, log.size() + 1, method, body)); // how to get data from message?
+                    // m.log should be the string recieved from client
+                    log.add(new Command(term, log.size(), m.clientRequest, "")); // not sure what body is supposed to be
                     // No confirmation to client needed
                 }
-                if (m.msg.equals("reponse")){
+                if (m.getType().equals("appendEntriesResponse")){
                     m = messages.poll();
-                    if (m.term == term){
-                        matchIndex[mIndex] = mLog.size();
-                        nextIndex[mIndex] = mLog.size() + 1;
+                    if (m.getTerm() == term && m.getSuccess()){ // incrementing mindex, nindex, if success
+                        matchIndex.replace(m.getPeer(), matchIndex.get(m.getPeer()) + 1);
+                        nextIndex.replace(m.getPeer(), nextIndex.get(m.getPeer()) + 1);
+                    }
+                    else if (m.getTerm() == term && !m.getSuccess()){ // decrement if success is false
+                        nextIndex.replace(m.getPeer(), nextIndex.get(m.getPeer()) - 1);
+                    }
+                    else{ //TODO what happends if terms are not equal?
+
                     }
                 }
-                if (m.msg.equals("appendEntries") || m.msg.equals("requestVote")){
-                    if (mTerm > term){ // how to keep message on the queu?
+                if (m.getType().equals("appendEntries") || m.getType().equals("requestVote")){
+                    if (m.getTerm() > term){ // we dont do messages.poll() so message can stay on queue
                         state = NODE_STATE.FOLLOWER;
                         break;
                     }
-                    else if(mTerm == term){m = messages.poll();}// then what
-                    else{m = messages.poll();}//reply false
+                    //TODO what happens when terms or uqual or less then?
+                    //reply false?
                 }
 
                 System.out.println("handled message");
@@ -370,24 +380,37 @@ public class RaftNode {
             //         seems out of date. If our heartbeat timeout has expired, send
             //         a message to everyone. if we do send an appendEntries, 
             //         update the heartbeat timer.
-            for(int nodeIndex : nextIndex){
-                if (nodeIndex <= log.size()){
-                    //send appendentries rpc for that log[nodeIndex]
-                    start = System.currentTimeMillis();
+            for(String peer : nextIndex.keySet()){
+                if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
+                    ArrayList<String> logEntriesToAdd = new ArrayList<>();
+                    for(int i = nextIndex.get(peer); i <= log.size(); i++){ // assuming log first index is 1
+                        logEntriesToAdd.add(log[i].getTerm());
+                        logEntriesToAdd.add(log[i].getIndex());
+                        logEntriesToAdd.add(log[i].getMethod());
+                        logEntriesToAdd.add(log[i].getBody());
+                    }
+                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, logEntriesToAdd, commitIndex);
+                    //start = System.currentTimeMillis(); //TODO why update heartbeat timer if only one node is being contacted
+                    
                 }
 
             }
+            //Heartbeat Timeout
             if(System.currentTimeMillis() + 5000 > start)
             {
-                //send blank appendentris rpc
-                start = System.currentTimeMillis();
+                for(String peer : nextInde.keySet()){ //send heartbeat out to every peer 
+
+                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, new ArrayList<>()//empty entries for heartbeat
+                    , commitIndex);
+                }
+                start = System.currentTimeMillis();// reseting heartbeat timer
             }
             // step 4: iterate through matchIndex to see if a majority of entries
             //         are > commitIndex (with term that is current). If so, 
             //         ++commitIndex. There are more aggressive ways to do this,
             //         but this will do.
-            int counter = 0;
-            for (int mIndex : matchIndex){
+            int counter = 1; // 1 because of counting self as part of majority
+            for (int mIndex : matchIndex.values()){
                 if (mIndex > commitIndex){counter++;}
             }
             if (counter >= ((peers + 1)/2)+1){ commitIndex++;}
