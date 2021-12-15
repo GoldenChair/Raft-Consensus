@@ -25,7 +25,7 @@ public class RaftRPC extends RaftRPCImplBase {
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
         boolean success = true;
-        int term = req.getTerm();
+        term = req.getTerm();
         int prevLogIdx = req.getPrevLogIdx();
         int prevLogTerm = req.getPrevLogTerm();
 
