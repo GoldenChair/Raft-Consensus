@@ -2,9 +2,11 @@ package lvc.cds.raft;
 
 import lvc.cds.raft.proto.*;
 
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolStringList;
 
 import io.grpc.stub.StreamObserver;
 import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCImplBase;
@@ -22,46 +24,35 @@ public class RaftRPC extends RaftRPCImplBase {
 
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
-        
-        String success = false;
-        
+        boolean success = true;
+        int term = req.getTerm();
+        int prevLogIdx = req.getPrevLogIdx();
+        int prevLogTerm = req.getPrevLogTerm();
 
-        int pli = req.getPrevLogIdx();
-        int plt = req.getPrevLogTerm();
-        Command c;
-        if(term <= req.getTerm())
-        {
-            int size = node.getLogSize();
-            if(size == 0)
-            {
-                //if log is empty
-            }
-            for(int i = 0; i < size; i++)
-            {
-                c = node.getPrevLog(i);
-                if(pli == c.getIndex() && plt == c.getTerm())
-                {
-                    success = true;
-                    node.deleteExtraLogs(pli);
-                    break;
-                }
-            }
-            
+        if (term < node.getTerm() || !node.prevLogExist(prevLogIdx, prevLogTerm)){ // Recevier implementation 1. & 2. in raft paper pg.4
+            success = false;
         }
 
-        if(success)
-        {
-            ArrayList<String> entries = req.getAllEntries();
-            String msg = "" + req.getTerm() + " " + req.getLeaderID() + " " + pli + " " + plt;
-            for(String s: entries)
-            {
-                msg += ":" + s;
-            }
+        if (success){
+            String leaderId = req.getLeaderID();
+            int leaderCommitIndex = req.getLeaderCommitIdx();
+            ArrayList<Command> commands = new ArrayList<Command>();
             
-            msg += "  " + req.getLeaderpackage lvc.cds.raft;
-            
+            String msg = "" + req.getTerm() + " " + req.getLeaderID() + " "
+            + req.getPrevLogIdx() + " " + req.getPrevLogTerm() + "\n"
+            + req.getLeaderCommitIdx() + "\n" + req.getEntriesList();
 
-        Response reply = Response.newBuilder().setSuccess(success).setTerm(term).build();
+            ProtocolStringList commandFields = req.getEntriesList();
+
+            // May be better way to make command using the Entries list of strings
+            for(int i = 0; i < req.getEntriesCount(); i += 4 ){ // should always be multiple of 4 as Coomand is split into 4 pieces
+                commands.add(commandFields.get(i), commandFields.get(i+1), commandFields.get(i+2), commandFields.get(i+3));
+            }
+
+            messages.add(new MessageAppendEntries(msg,term, leaderId, prevLogIdx, prevLogTerm, leaderCommitIndex, commands));
+        }
+
+        Response reply = Response.newBuilder().setSuccess(success).setTerm(node.getTerm()).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
     }
