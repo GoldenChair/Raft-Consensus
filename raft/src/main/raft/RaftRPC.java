@@ -14,7 +14,6 @@ public class RaftRPC extends RaftRPCImplBase {
     private int term;
     private RaftNode node;
 
-
     public RaftRPC(ConcurrentLinkedQueue<Message> messages, int term, RaftNode node) {
         this.messages = messages;
         this.term = term;
@@ -96,7 +95,7 @@ public class RaftRPC extends RaftRPCImplBase {
     // should be able to recieve it as clientMessage and message.poll().log
     @Override
     public void clientMessage(ClientMessage req, StreamObserver<Response> responseObserver){
-        messages.add(new ClientMessage(req.getLog()));
+        messages.add(new MessageClient(req.getLog()));
     }
 
 
