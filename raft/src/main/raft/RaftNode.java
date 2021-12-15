@@ -298,19 +298,12 @@ public class RaftNode {
 
         // upon election; send initial empty AppendEntries RPC (heartbeat)
         // Maybe create zero parameter constructer appendEntries rpc for heartbeat
-
         // send a message to every peer for initial heartbeat
         // heartbeat is appendEntries with no log entries
         for (var peer : peers.values()) {
-            String[] emptyLog = new String[0];
-            peer.sendAppendEntries(term, "me", 0, 0, emptyLog, commitIndex); //heartbeatmessage. Need to check if this is correct
+            peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, new ArrayList<String>()//empty entries for heartbeat
+                    , commitIndex); 
         }
-
-        // long heartbeat = 5000;
-        // long newMessages = 1000;
-        // long[] time = new long[peers.size()];
-        // for(long t: time)
-        //     t = System.currentTimeMillis();
 
 
         // notes: We have decisions to make regarding things like: how many queues do
@@ -400,7 +393,7 @@ public class RaftNode {
             {
                 for(String peer : nextInde.keySet()){ //send heartbeat out to every peer 
 
-                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, new ArrayList<>()//empty entries for heartbeat
+                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
                 }
                 start = System.currentTimeMillis();// reseting heartbeat timer
