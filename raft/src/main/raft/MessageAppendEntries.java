@@ -10,61 +10,15 @@ public class MessageAppendEntries extends Message{
     private ArrayList<Command> entries;
 
 
-    public MessageAppendEntries(String message)
+    public MessageAppendEntries(String message, int term, String leaderid, int prevLogIdx, int prevLogTerm, int leaderCommitIndex, ArrayList<Command> commands)
     {
         super(message, "appendEntries");
-        int index = message.indexOf(" ");
-        String subMessage = message.substring(index+1);
-        term = Integer.parseInt(message.substring(0, index));
-
-        index = subMessage.indexOf(" ");
-        leaderId = subMessage.substring(0,index);
-        subMessage = subMessage.substring(index+1);
-
-        index = subMessage.indexOf(" ");
-        prevLogIdx = Integer.parseInt(subMessage.substring(0,index));
-        subMessage = subMessage.substring(index+1);
-
-        index = subMessage.indexOf(":");
-        prevLogTerm = Integer.parseInt(subMessage.substring(0,index));
-        subMessage = subMessage.substring(index+1);
-
-        index = subMessage.indexOf("  ");
-        String entriesList = subMessage.substring(0,index);
-        subMessage = subMessage.substring(index+2);
-
-        index = subMessage.indexOf(" ");
-        leaderCommitIndex = Intger.parse(subMessage.substring(0, index));
-        subMessage = subMessage.substring(index+1);
-    
-
-        int t;
-        int i;
-        String body;
-        String method;
-        //break up entriesList
-        while(entriesList.length() > 0)
-        {
-            index = entriesList.indexOf(":");
-            i = Integer.parseInt(entriesList.substring(0, index));
-            entriesList = entriesList.substring(index+1);
-
-            index = entriesList.indexOf(":");
-            i = Integer.parseInt(entriesList.substring(0, index));
-            entriesList = entriesList.substring(index+1);
-
-            index = entriesList.indexOf(":");
-            i = Integer.parseInt(entriesList.substring(0, index));
-            entriesList = entriesList.substring(index+1);
-
-            index = entriesList.indexOf(":");
-            if(index > -1)
-                body = Integer.parseInt(entriesList.substring(0, index));
-            entriesList = entriesList.substring(index+1);
-
-
-            entries.add(new Command(t, i, method, body));
-        }
+        this.term = term;
+        this.leaderId = leaderid;
+        this.prevLogIdx = prevLogIdx;
+        this.prevLogTerm = prevLogTerm;
+        this.leaderCommitIndex = leaderCommitIndex;
+        this.entries = commands;
     }
 
     public int getTerm()
