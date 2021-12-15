@@ -44,7 +44,7 @@ public static class PeerStub {
             public void onNext(Response value) {
                 // we have the peer string (IP address) available here.
                 String msg = "reply from " + peer + " " + value.getTerm() + " " + value.getSuccess();
-                messages.add(new Message(msg));
+                messages.add(new AppendEntriesResponse(msg, peer, value.getTerm(), value.getSuccess()));
             }
 
             @Override
