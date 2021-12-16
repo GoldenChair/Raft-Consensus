@@ -361,16 +361,19 @@ public class RaftNode {
             //      then we want to check the term, and if appropriate, convert to
             //      follower (leaving this message on the queue!)
             Message m = messages.peek(); // so message is left on queue if needed
+            
             if (m != null) {
                 if (m.getMsg().equals(""))
                     break;
+                System.out.println(m.getType());
                 if (m.getType().equals("client")){
                     MessageClient cM = (MessageClient) messages.poll();
                     // split(" , 2") should give list with [0] = method and [1] = body
                     String[] splited = cM.getClientRequest().split(" ", 2);
                     log.add(new Command(term, log.size(), splited[0], splited[1]));
-                    persistentLog(log.size());
+                    persistentLog(log.size()-1);
                     // No confirmation to client needed
+                    System.out.println("Client message: " + term + ", " + splited[0] + ", " + splited[1]);
                 }
                 if (m.getType().equals("appendEntriesResponse")){
                     AppendEntriesResponse aerM = (AppendEntriesResponse) messages.poll();
@@ -535,6 +538,7 @@ public class RaftNode {
             myWriter.write("" + c.getMethod());
             myWriter.write("\n");
             myWriter.write("" + c.getBody());
+            myWriter.write("\n");
             myWriter.close();
           } catch (IOException e) {
 
@@ -607,12 +611,10 @@ public class RaftNode {
         return log.get(log.size()-1-n); 
     }
 
-    public void deleteExtraLogs(int n)
+    public void deleteLog(int n)
     {
-        for(int i = log.size() - 1; i > n; i--)
-        {
+        for(int i = n; i < log.size(); i++)
             log.remove(i);
-        }
         writeLogs();
     }
 
@@ -621,13 +623,23 @@ public class RaftNode {
         return log.size();
     }
 
+    public Command getLog(int n)
+    {
+        return log.get(n);
+    }
+
     public int getTerm()
     {
         return term;
     }
 
+    public int getPrevLogTerm()
+    {
+        return log.get(log.size()-1).getTerm();
+    }
+
     public boolean prevLogExist(int prevLogIndex, int prevLogTerm){
-        if (prevLogIndex > log.size()){ // greater as index starts at 1
+        if (prevLogIndex > log.size()-1){ // greater as index starts at 1
             return false;
         }
         if (log.get(prevLogIndex).getTerm() != prevLogTerm){
@@ -642,11 +654,11 @@ public class RaftNode {
         // [0] = KEY, [1] = field, [2] = value if modify request
         String[] splited = command.getBody().split(" ");
         
-        if(command.getMethod().equals("add")){
+        if(command.getMethod().equals("ADD")){
             JsonObject hold = new JsonObject();
             hold.put(splited[1], splited[2]);
             kvs.add(splited[0], hold);
-        }else if(command.getMethod().equals("remove")){
+        }else if(command.getMethod().equals("DEL")){
             kvs.remove(splited[0]);
         } else if(command.getMethod().equals("clear")){
             kvs.clear();

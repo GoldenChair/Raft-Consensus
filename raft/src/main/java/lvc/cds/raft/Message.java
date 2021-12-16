@@ -6,6 +6,7 @@ public class Message {
 
     Message(String msg, String type) {
         this.msg = msg;
+        this.type = type;
     }
 
     public String getMsg()
