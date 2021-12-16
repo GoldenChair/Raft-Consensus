@@ -44,6 +44,7 @@ public class RaftNode {
 
     private File persistentState;
     private File logStorage;
+    private KVS kvs;
 
 
 
