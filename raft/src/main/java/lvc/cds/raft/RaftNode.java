@@ -1,5 +1,7 @@
 package lvc.cds.raft;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,8 +10,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.google.gson.JsonObject;
-import com.google.protobuf.Message;
+import com.github.cliftonlabs.json_simple.JsonObject;
+// import com.google.protobuf.Message;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -18,6 +20,7 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lvc.cds.KVS;
 import lvc.cds.raft.proto.AppendEntriesMessage;
+import lvc.cds.raft.proto.ClientMessage;
 import lvc.cds.raft.proto.RaftRPCGrpc;
 import lvc.cds.raft.proto.Response;
 import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCStub;
@@ -323,7 +326,7 @@ public class RaftNode {
             // step one: check out commitIndex to see if we can commit any
             // logs. As we commit logs, Increase lastApplied
             while (commitIndex > lastApplied){
-                parseToKVS(log[lastApplied + 1]);
+                parseToKVS(log.get(lastApplied + 1));
                 lastApplied++;
             }
             // step 2: check to see if any messages or replies are present
@@ -338,39 +341,46 @@ public class RaftNode {
             //      follower (leaving this message on the queue!)
             Message m = messages.peek(); // so message is left on queue if needed
             if (m != null) {
-                if (m.msg.equals(""))
+                if (m.getMsg().equals(""))
                     break;
                 if (m.getType().equals("client")){
-                    m = messages.poll();
+                    MessageClient cM = (MessageClient) messages.poll();
                     // split(" , 2") should give list with [0] = method and [1] = body
-                    String[] splited = m.clientRequest.split(" ", 2);
+                    String[] splited = cM.getClientRequest().split(" ", 2);
                     log.add(new Command(term, log.size(), splited[0], splited[1]));
                     persistentLog(log.size());
                     // No confirmation to client needed
                 }
                 if (m.getType().equals("appendEntriesResponse")){
-                    m = messages.poll();
-                    if (m.getSuccess()){ // incrementing mindex, nindex, if success
-                        matchIndex.replace(m.getPeer(), matchIndex.get(m.getPeer()) + 1);
-                        nextIndex.replace(m.getPeer(), nextIndex.get(m.getPeer()) + 1);
+                    AppendEntriesResponse aerM = (AppendEntriesResponse) messages.poll();
+                    if (aerM.getSuccess()){ // incrementing mindex, nindex, if success
+                        matchIndex.replace(aerM.getPeer(), matchIndex.get(aerM.getPeer()) + 1);
+                        nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) + 1);
                     }
-                    else if (!m.getSuccess()){ // decrement if success is false
-                        nextIndex.replace(m.getPeer(), nextIndex.get(m.getPeer()) - 1);
+                    else if (!aerM.getSuccess()){ // decrement if success is false
+                        nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) - 1);
                     }
                     else{ //TODO is there anything other case to account for?
 
                     }
                 }
-                if (m.getType().equals("appendEntries") || m.getType().equals("requestVote")){
-                    if (m.getTerm() > term){ // we dont do messages.poll() so message can stay on queue
+                if (m.getType().equals("appendEntries") ){
+                    MessageAppendEntries aeM = (MessageAppendEntries) m;
+                    if (aeM.getTerm() > term){ // we dont do messages.poll() so message can stay on queue
                         state = NODE_STATE.FOLLOWER;
                         break;
                     }
                     //TODO Does anything happen when terms or equal or less then?
+                } else if(m.getType().equals("requestVote")){
+                    MessageRequestVote rvM = (MessageRequestVote) m;
+                    if (rvM.getTerm() > term){ // we dont do messages.poll() so message can stay on queue
+                        state = NODE_STATE.FOLLOWER;
+                        break;
+                    }
                 }
 
                 System.out.println("handled message");
-                System.out.println(m.msg);
+                System.out.println(m.getMsg());
             } 
             // step 3: see if we need to send any messages out. Iterate through
             //         nextIndex and send an appendEntries message to anyone who 
@@ -380,13 +390,14 @@ public class RaftNode {
             for(String peer : nextIndex.keySet()){
                 if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
                     ArrayList<String> logEntriesToAdd = new ArrayList<>();
-                    for(int i = nextIndex.get(peer); i <= log.size(); i++){ // assuming log first index is 1
-                        logEntriesToAdd.add(log[i].getTerm());
-                        logEntriesToAdd.add(log[i].getIndex());
-                        logEntriesToAdd.add(log[i].getMethod());
-                        logEntriesToAdd.add(log[i].getBody());
+                    for(int i = nextIndex.get(peer); i <= log.size() - 1; i++){ // assuming log first index is 1
+                        logEntriesToAdd.add(String.valueOf(log.get(i).getTerm()));
+                        logEntriesToAdd.add(String.valueOf(log.get(i).getIndex()));
+                        logEntriesToAdd.add(log.get(i).getMethod());
+                        logEntriesToAdd.add(log.get(i).getBody());
                     }
-                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, logEntriesToAdd, commitIndex);
+                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
+                     logEntriesToAdd, commitIndex);
                     //start = System.currentTimeMillis(); //TODO why update heartbeat timer if only one node is being contacted
                     
                 }
@@ -395,9 +406,9 @@ public class RaftNode {
             //Heartbeat Timeout
             if(System.currentTimeMillis() + 5000 > start)
             {
-                for(String peer : nextInde.keySet()){ //send heartbeat out to every peer 
+                for(String peer : nextIndex.keySet()){ //send heartbeat out to every peer 
 
-                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, new ArrayList<String>()//empty entries for heartbeat
+                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
                 }
                 start = System.currentTimeMillis();// reseting heartbeat timer
@@ -410,7 +421,7 @@ public class RaftNode {
             for (int mIndex : matchIndex.values()){
                 if (mIndex > commitIndex){counter++;}
             }
-            if (counter >= ((peers + 1)/2)+1){ commitIndex++;}
+            if (counter >= ((peers.size() + 1)/2)+1){ commitIndex++;}
         }
     }
 
@@ -421,7 +432,7 @@ public class RaftNode {
     }
 
 
-    public boolean persistentLog(int index)
+    public void persistentLog(int index)
     {
         Command c = log.get(index);
         try {
@@ -439,7 +450,7 @@ public class RaftNode {
           }
     }
 
-    public boolean persistentState(int currentTerm, String votedFor)
+    public void persistentState(int currentTerm, String votedFor)
     {
         try {
             FileWriter myWriter = new FileWriter("persistentState.txt");
@@ -448,7 +459,7 @@ public class RaftNode {
             myWriter.write(votedFor);
             myWriter.close();
           } catch (IOException e) {
-
+            
           }
     }
 
@@ -481,7 +492,7 @@ public class RaftNode {
 
     public Command getPrevLog(int n)
     {      
-        return log.get(log.size-1-n); 
+        return log.get(log.size()-1-n); 
     }
 
     public void deleteExtraLogs(int n)
@@ -527,8 +538,13 @@ public class RaftNode {
         } else if(command.getMethod().equals("clear")){
             kvs.clear();
         } else if (command.getMethod().equals("modify")){
-            kvs.modify(splited[0], splited[1]. splited[2]);
+            kvs.modify(splited[0], splited[1], splited[2]);
         }
-        kvs.writeToDisk("kvsstorage");
+        try {
+            kvs.writeToDisk("kvsstorage");
+          } catch (IOException e) {
+
+          }
+        
     }
 }
