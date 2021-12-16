@@ -144,6 +144,7 @@ public class RaftNode {
         state = NODE_STATE.FOLLOWER;
 
         while (state != NODE_STATE.SHUTDOWN) {
+            System.out.println(state);
             switch (state) {
             case FOLLOWER:
                 state = follower();
