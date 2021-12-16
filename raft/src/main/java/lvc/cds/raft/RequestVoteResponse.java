@@ -11,10 +11,7 @@ public class RequestVoteResponse extends Message{
         super(message, "requestVoteResponse");
         
         this.term = term;
-        if(s)
-            this.success = true;
-        else
-            this.success = false;
+        this.success = s;
 
         this.peer = peer;
         

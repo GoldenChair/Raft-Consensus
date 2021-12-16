@@ -49,6 +49,7 @@ public class RaftNode {
     private File persistentState;
     private File logStorage;
     private KVS kvs;
+    private String me;
 
 
 
@@ -60,6 +61,7 @@ public class RaftNode {
         this.messages = new ConcurrentLinkedQueue<>();
         this.state = NODE_STATE.FOLLOWER;
         this.leaderId = me;
+        this.me = me;
         try{
             this.kvs = new KVS("kvsstorage");
         }catch(JsonException e){
@@ -449,7 +451,60 @@ public class RaftNode {
     private NODE_STATE candidate() {
         // an event loop that processes incoming messages and timeout events
         // according to the raft rules for leaders.
-        return NODE_STATE.LEADER;
+
+        term++;
+        votedFor = me;
+        persistentState(term, votedFor);
+        Random rand = new Random();
+        long heartbeat;
+        long start = System.currentTimeMillis();
+
+        int votes = 1;
+        for (var peer : peers.values()) {
+            peers.get(peer).sendRequestVote(term, me, log.size()-1, log.get(log.size()-1).getTerm());
+        }
+
+        while(true)
+        {
+            // If we haven't connected yet...
+            if (!peersConnected)
+            {
+                connectRpcChannels();
+                peersConnected = true;
+            }
+
+            heartbeat = 10000 + rand.nextInt(50);
+            if(System.currentTimeMillis() - start > heartbeat)
+            {
+                return NODE_STATE.CANDIDATE;
+            }
+
+            Message m = messages.peek(); // so message is left on queue if needed
+            if (m != null) {
+                if (m.getMsg().equals(""))
+                    break;
+                if(m.getType().equals("requestVoteResponse"))
+                {
+                    RequestVoteResponse vr = (RequestVoteResponse) messages.poll();
+                    if(vr.getSuccess())
+                        votes++;
+                    if(votes > (peers.size() +1 / 2.0))
+                        return NODE_STATE.LEADER;
+                }
+                else if(m.getType().equals("appendEntries"))
+                {
+                    return NODE_STATE.FOLLOWER;
+                }
+                else if(m.getType().equals("requestVote"))
+                {
+                    return NODE_STATE.FOLLOWER;
+                }
+
+            }
+
+        }
+
+        return NODE_STATE.FOLLOWER;
     }
 
 
