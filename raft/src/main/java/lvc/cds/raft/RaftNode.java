@@ -328,6 +328,12 @@ public class RaftNode {
         // send a message to every peer for initial heartbeat
         // heartbeat is appendEntries with no log entries
         for (String peer : peers.keySet()) {
+            System.out.println("term :" + term);
+            System.out.println("leaderid :" + leaderId);
+            System.out.println("prevlogindex :" + String.valueOf(nextIndex.get(peer) - 1));
+            System.out.println("prev logTerm: " + String.valueOf(log.get(nextIndex.get(peer) - 1).getTerm()));
+            System.out.println("entries" + new ArrayList<String>());
+            System.out.println("leadercommitindex :" + String.valueOf(commitIndex));
             peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex); 
         }
