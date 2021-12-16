@@ -341,8 +341,9 @@ public class RaftNode {
                     break;
                 if (m.getType().equals("client")){
                     m = messages.poll();
-                    // m.log should be the string recieved from client
-                    log.add(new Command(term, log.size(), m.clientRequest, "")); //TODO not sure what body is supposed to be
+                    // split(" , 2") should give list with [0] = method and [1] = body
+                    String[] splited = m.clientRequest.split(" ", 2);
+                    log.add(new Command(term, log.size(), splited[0], splited[1]));
                     persistentLog(log.size());
                     // No confirmation to client needed
                 }
