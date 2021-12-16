@@ -94,11 +94,6 @@ public class RaftNode {
         // when starting server all logs from pLog is added to memory.
         try{
             logStorage = new File("persistentLog.txt");
-            if (persistentState.createNewFile()){ // If there is no persistentState on node create one and put inital empty Command in
-                Command emptyInitalLog = new Command(0, 0, "", "");
-                log.add(emptyInitalLog);
-                persistentLog(0);
-            }
             Scanner sc = new Scanner(logStorage);
             while(sc.hasNextLine())
             {
