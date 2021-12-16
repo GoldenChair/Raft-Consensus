@@ -379,8 +379,8 @@ public class RaftNode {
                 if (m.getType().equals("appendEntriesResponse")){
                     AppendEntriesResponse aerM = (AppendEntriesResponse) messages.poll();
                     if (aerM.getSuccess()){ // incrementing mindex, nindex, if success
-                        matchIndex.replace(aerM.getPeer(), matchIndex.get(aerM.getPeer()) + 1);
-                        nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) + 1);
+                        matchIndex.replace(aerM.getPeer(), matchIndex.get(aerM.getPeer()) + aerM.getSize());
+                        nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) + aerM.getSize());
                     }
                     else if (!aerM.getSuccess()){ // decrement if success is false
                         nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) - 1);
