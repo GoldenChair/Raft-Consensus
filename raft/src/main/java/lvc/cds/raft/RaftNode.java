@@ -62,11 +62,13 @@ public class RaftNode {
         this.state = NODE_STATE.FOLLOWER;
         this.leaderId = me;
         this.me = me;
+        
         try{
             this.kvs = new KVS("kvsstorage");
         }catch(JsonException e){
 
         }
+        
         
 
         // a map containing stubs for communicating with each of our peers
@@ -128,7 +130,6 @@ public class RaftNode {
         //what else do we need to send
         // do we need to send term when we have this?
         rrpc = new RaftRPC(messages, this);
-        
         
     }
 
@@ -240,6 +241,7 @@ public class RaftNode {
 
             // first, see if there are incoming messages or replies
             // to process
+            int lastNewEntry = log.size()-1;
             Message m = messages.poll();
             if (m != null) {
                 if (m.getMsg().equals(""))
@@ -248,7 +250,6 @@ public class RaftNode {
                 {
                     MessageAppendEntries ae = (MessageAppendEntries) m;
                     //if success
-                    int lastNewEntry;
                     if(term < ae.getTerm())
                     {
                         term = ae.getTerm();
@@ -342,6 +343,7 @@ public class RaftNode {
         while (true) {
             // step one: check out commitIndex to see if we can commit any
             // logs. As we commit logs, Increase lastApplied
+            //System.out.print(commitIndex + " " + lastApplied);
             while (commitIndex > lastApplied){
                 parseToKVS(log.get(lastApplied + 1));
                 lastApplied++;
@@ -378,9 +380,6 @@ public class RaftNode {
                     }
                     else if (!aerM.getSuccess()){ // decrement if success is false
                         nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) - 1);
-                    }
-                    else{ //TODO is there anything other case to account for?
-
                     }
                 }
                 if (m.getType().equals("appendEntries") ){
@@ -440,7 +439,7 @@ public class RaftNode {
             for (int mIndex : matchIndex.values()){
                 if (mIndex > commitIndex){counter++;}
             }
-            if (counter >= ((peers.size() + 1)/2)+1){ commitIndex++;}
+            if (log.size() -1 > commitIndex && counter >= ((peers.size() + 1)/2)+1){ commitIndex++;}
         }
 
         return NODE_STATE.FOLLOWER;
@@ -458,9 +457,26 @@ public class RaftNode {
         long heartbeat;
         long start = System.currentTimeMillis();
 
+        int lastLogIndex;
+        int lastLogTerm;
         int votes = 1;
+        if(log.size() > 0)
+        {
+            lastLogIndex = log.size()-1;
+            lastLogTerm = log.get(log.size()-1).getTerm();
+        }
+        else{
+            lastLogIndex = 0;
+            lastLogTerm = 0;
+        }
+        System.out.println(peers.size());
+
+
+        if(votes > (peers.size() +1 / 2.0))
+            return NODE_STATE.LEADER;
+            
         for (var peer : peers.values()) {
-            peers.get(peer).sendRequestVote(term, me, log.size()-1, log.get(log.size()-1).getTerm());
+            peers.get(peer).sendRequestVote(term, me, lastLogIndex, lastLogTerm);
         }
 
         while(true)
@@ -577,7 +593,7 @@ public class RaftNode {
         try {
             // If there was no persistentLog on node create one and put inital empty Command in
             FileWriter myWriter = new FileWriter("persistentLog.txt");
-            Command emptyInitalLog = new Command(0, 0, "", "");
+            Command emptyInitalLog = new Command(0, 0, "index0", "index0");
             log.add(emptyInitalLog);
             persistentLog(0);
             myWriter.close();

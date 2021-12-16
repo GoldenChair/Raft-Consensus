@@ -7,7 +7,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class App {
-    public static final int PORT = 5777;
+    public static final int PORT = 5786;
 
     public static void main(String[] args) {
 
@@ -15,9 +15,9 @@ public class App {
             String me = InetAddress.getLocalHost().getHostAddress();
             System.out.println(me);
             ArrayList<String> peers = new ArrayList<>();
-            peers.add("10.1.23.83");
-            peers.add("10.1.23.84");
-            peers.add("10.1.23.85");
+            peers.add("10.1.23.52");
+            //peers.add("10.1.23.84");
+            //peers.add("10.1.23.85");
 
             RaftNode node = new RaftNode(PORT, me, peers);
 

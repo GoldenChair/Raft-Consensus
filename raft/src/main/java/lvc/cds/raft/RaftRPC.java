@@ -29,9 +29,11 @@ public class RaftRPC extends RaftRPCImplBase {
 
         if (term < node.getTerm() || !node.prevLogExist(prevLogIdx, prevLogTerm)){ // Recevier implementation 1. & 2. in raft paper pg.4
             success = false;
+            //if (node.getLogSize()-1 == prevLogIdx && term)
+
         }
 
-        //if need to delete
+        
 
         if (success){
             String leaderId = req.getLeaderID();
