@@ -15,6 +15,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import lvc.cds.KVS;
 import lvc.cds.raft.proto.AppendEntriesMessage;
 import lvc.cds.raft.proto.RaftRPCGrpc;
 import lvc.cds.raft.proto.Response;
@@ -54,6 +55,7 @@ public class RaftNode {
         this.messages = new ConcurrentLinkedQueue<>();
         this.state = NODE_STATE.FOLLOWER;
         this.leaderId = me;
+        this.kvs = new KVS("kvsstorage");
 
         // a map containing stubs for communicating with each of our peers
         this.peers = new HashMap<>();
