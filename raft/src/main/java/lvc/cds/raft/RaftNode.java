@@ -422,20 +422,22 @@ public class RaftNode {
             //         a message to everyone. if we do send an appendEntries, 
             //         update the heartbeat timer.
             for(String peer : nextIndex.keySet()){
-                if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
-                    ArrayList<String> logEntriesToAdd = new ArrayList<>();
-                    for(int i = nextIndex.get(peer); i <= log.size() - 1; i++){ // assuming log first index is 1
-                        logEntriesToAdd.add(String.valueOf(log.get(i).getTerm()));
-                        logEntriesToAdd.add(String.valueOf(log.get(i).getIndex()));
-                        logEntriesToAdd.add(log.get(i).getMethod());
-                        logEntriesToAdd.add(log.get(i).getBody());
+                if(System.currentTimeMillis() > HeartBeat.get(peer) + 2500) {
+                    if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
+                        ArrayList<String> logEntriesToAdd = new ArrayList<>();
+                        for(int i = nextIndex.get(peer); i <= log.size() - 1; i++){ // assuming log first index is 1
+                            logEntriesToAdd.add(String.valueOf(log.get(i).getTerm()));
+                            logEntriesToAdd.add(String.valueOf(log.get(i).getIndex()));
+                            logEntriesToAdd.add(log.get(i).getMethod());
+                            logEntriesToAdd.add(log.get(i).getBody());
+                        }
+                        System.out.println(logEntriesToAdd.size());
+                        peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
+                        logEntriesToAdd, commitIndex);
+                        HeartBeat.replace(peer, System.currentTimeMillis());
+                        //start = System.currentTimeMillis(); //TODO why update heartbeat timer if only one node is being contacted
+                        
                     }
-                    System.out.println(logEntriesToAdd.size());
-                    peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
-                     logEntriesToAdd, commitIndex);
-                    HeartBeat.replace(peer, System.currentTimeMillis());
-                    //start = System.currentTimeMillis(); //TODO why update heartbeat timer if only one node is being contacted
-                    
                 }
 
             }
