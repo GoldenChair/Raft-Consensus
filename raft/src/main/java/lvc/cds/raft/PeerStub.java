@@ -1,8 +1,19 @@
 package lvc.cds.raft;
 
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
+import lvc.cds.raft.proto.AppendEntriesMessage;
+import lvc.cds.raft.proto.RaftRPCGrpc;
+import lvc.cds.raft.proto.RequestVoteMessage;
+import lvc.cds.raft.proto.Response;
+import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCStub;
 
-public static class PeerStub {
+public class PeerStub {
     ConcurrentLinkedQueue<Message> messages;
     String peer;
     int port;
@@ -44,12 +55,12 @@ public static class PeerStub {
             public void onNext(Response value) {
                 // we have the peer string (IP address) available here.
                 String msg = "reply from " + peer + " " + value.getTerm() + " " + value.getSuccess();
-                messages.add(new AppendEntriesResponse(msg, peer, value.getTerm(), value.getSuccess()));
+                messages.add(new AppendEntriesResponse(msg, value.getTerm(), value.getSuccess(), peer));
             }
 
             @Override
             public void onError(Throwable t) {
-                messages.add(new Message("error handling response"));
+                messages.add(new Message("error","error handling response"));
             }
 
             @Override
@@ -64,7 +75,7 @@ public static class PeerStub {
     void sendRequestVote(int term, String candidateId, int lastLogIdx, int lastLogTerm) {
         RequestVoteMessage request = RequestVoteMessage.newBuilder()
         .setTerm(term).setCandidateID(candidateId)
-        .setLastLogIdx(lastLogIdx).setLastLogTerm(lastLogTerm)
+        .setLastLogIndex(lastLogIdx).setLastLogTerm(lastLogTerm)
         .build();
 
         getStub().requestVote(request, new StreamObserver<Response>() {
@@ -77,7 +88,7 @@ public static class PeerStub {
 
             @Override
             public void onError(Throwable t) {
-                messages.add(new Message("error handling response"));
+                messages.add(new Message("error", "error handling response"));
             }
 
             @Override
