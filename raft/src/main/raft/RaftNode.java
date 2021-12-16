@@ -41,7 +41,7 @@ public class RaftNode {
     private int term;
     private String votedFor;
     private String leaderId;
-
+    private KVS kvs;
     private File persistentState;
     private File logStorage;
 
