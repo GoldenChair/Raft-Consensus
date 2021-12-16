@@ -430,6 +430,7 @@ public class RaftNode {
             for(String peer : HeartBeat.keySet()){
                 if(System.currentTimeMillis() > HeartBeat.get(peer) + 5000)
                 {
+                    System.out.println(nextIndex.get(peer) - 1);
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
                     HeartBeat.replace(peer, System.currentTimeMillis()); // reseting heartbeat timer

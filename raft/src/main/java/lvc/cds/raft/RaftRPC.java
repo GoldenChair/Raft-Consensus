@@ -69,7 +69,7 @@ public class RaftRPC extends RaftRPCImplBase {
 
         int lli = req.getLastLogIndex();
         int llt = req.getLastLogTerm();
-        if(node.getTerm() <= req.getTerm())
+        if(node.getTerm() < req.getTerm())
         {
             Command c = node.getPrevLog(0);
 
