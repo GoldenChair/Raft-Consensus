@@ -508,7 +508,7 @@ public class RaftNode {
                     RequestVoteResponse vr = (RequestVoteResponse) messages.poll();
                     if(vr.getSuccess())
                         votes++;
-                    if(votes > (peers.size() +1 / 2.0))
+                    if(votes > (peers.size() +1) / 2.0))
                         return NODE_STATE.LEADER;
                 }
                 else if(m.getType().equals("appendEntries"))
