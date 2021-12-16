@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 // import com.google.protobuf.Message;
 
@@ -59,7 +60,12 @@ public class RaftNode {
         this.messages = new ConcurrentLinkedQueue<>();
         this.state = NODE_STATE.FOLLOWER;
         this.leaderId = me;
-        this.kvs = new KVS("kvsstorage");
+        try{
+            this.kvs = new KVS("kvsstorage");
+        }catch(JsonException e){
+
+        }
+        
 
         // a map containing stubs for communicating with each of our peers
         this.peers = new HashMap<>();
@@ -307,7 +313,7 @@ public class RaftNode {
         // send a message to every peer for initial heartbeat
         // heartbeat is appendEntries with no log entries
         for (var peer : peers.values()) {
-            peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log[nextIndex.get(peer) - 1].term, new ArrayList<String>()//empty entries for heartbeat
+            peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex); 
         }
 
@@ -423,6 +429,9 @@ public class RaftNode {
             }
             if (counter >= ((peers.size() + 1)/2)+1){ commitIndex++;}
         }
+
+        return NODE_STATE.FOLLOWER;
+        
     }
 
     private NODE_STATE candidate() {
