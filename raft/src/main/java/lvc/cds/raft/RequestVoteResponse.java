@@ -12,7 +12,6 @@ public class RequestVoteResponse extends Message{
         
         this.term = term;
         this.success = s;
-
         this.peer = peer;
         
     }

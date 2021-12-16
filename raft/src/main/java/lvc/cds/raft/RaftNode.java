@@ -303,7 +303,6 @@ public class RaftNode {
 
     // lo
     private NODE_STATE leader() {
-        long start = System.currentTimeMillis();
         // any setup that is needed before we start out event loop as we just
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
