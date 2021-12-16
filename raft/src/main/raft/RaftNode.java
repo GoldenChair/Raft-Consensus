@@ -41,7 +41,6 @@ public class RaftNode {
     private int term;
     private String votedFor;
     private String leaderId;
-    private KVS kvs;
     private File persistentState;
     private File logStorage;
     private KVS kvs;
@@ -323,8 +322,8 @@ public class RaftNode {
             // step one: check out commitIndex to see if we can commit any
             // logs. As we commit logs, Increase lastApplied
             while (commitIndex > lastApplied){
-                //TODO apply log[lastApplied + 1] to KVS
-                // lastApplied++
+                parseToKVS(log[lastApplied + 1]);
+                lastApplied++;
             }
             // step 2: check to see if any messages or replies are present
             // if so:
@@ -511,5 +510,21 @@ public class RaftNode {
         return true;
     }
 
-    
+    public void parseToKVS(Command command){
+        // [0] should be key and [1] should be value
+        // if its a modify request then it should be
+        // [0] = key, [1] = field, [2] = value
+        String[] splited = command.getBody().split(" ");
+
+        if(command.getMethod().equals("add")){
+            kvs.add(splited[0], splited[1]);
+        }else if(command.getMethod().equals("remove")){
+            kvs.remove(splited[0]);
+        } else if(command.getMethod().equals("clear")){
+            kvs.clear();
+        } else if (command.getMethod().equals("modify")){
+            kvs.modify(splited[0], splited[1]. splited[2]);
+        }
+        kvs.writeToDisk("kvsstorage");
+    }
 }
