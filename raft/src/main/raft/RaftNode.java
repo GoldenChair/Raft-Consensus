@@ -1,6 +1,5 @@
 package lvc.cds.raft;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,15 +69,8 @@ public class RaftNode {
         lastApplied = 0;
 
         // initial persistent state (currentTerm and votedFor) for node
-        log = new ArrayList<>();
-
         try{
             persistentState = new File("persistentState.txt");
-            if (persistentState.createNewFile()){ // If there is no persistentState on node create one and put inital empty Command in
-                Command emptyInitalLog = new Command(0, 0, "", "");
-                log.add(emptyInitalLog);
-                persistentLog(0);
-            }
             Scanner sc = new Scanner(persistentState);
             term = sc.nextInt();
             sc.nextLine();
@@ -92,7 +84,7 @@ public class RaftNode {
             createPersistentState();
         }
 
-        
+        log = new ArrayList<>();
         int t;
         int i;
         String method;
@@ -102,6 +94,11 @@ public class RaftNode {
         // when starting server all logs from pLog is added to memory.
         try{
             logStorage = new File("persistentLog.txt");
+            if (persistentState.createNewFile()){ // If there is no persistentState on node create one and put inital empty Command in
+                Command emptyInitalLog = new Command(0, 0, "", "");
+                log.add(emptyInitalLog);
+                persistentLog(0);
+            }
             Scanner sc = new Scanner(logStorage);
             while(sc.hasNextLine())
             {
@@ -472,7 +469,11 @@ public class RaftNode {
     public void createEmptyLog()
     {
         try {
+            // If there was no persistentLog on node create one and put inital empty Command in
             FileWriter myWriter = new FileWriter("persistentLog.txt");
+            Command emptyInitalLog = new Command(0, 0, "", "");
+            log.add(emptyInitalLog);
+            persistentLog(0);
             myWriter.close();
           } catch (IOException e) {
 
