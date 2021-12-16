@@ -1,5 +1,6 @@
 package lvc.cds.raft;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -69,8 +70,15 @@ public class RaftNode {
         lastApplied = 0;
 
         // initial persistent state (currentTerm and votedFor) for node
+        log = new ArrayList<>();
+
         try{
             persistentState = new File("persistentState.txt");
+            if (persistentState.createNewFile()){ // If there is no persistentState on node create one and put inital empty Command in
+                Command emptyInitalLog = new Command(0, 0, "", "");
+                log.add(emptyInitalLog);
+                persistentLog(0);
+            }
             Scanner sc = new Scanner(persistentState);
             term = sc.nextInt();
             sc.nextLine();
@@ -84,7 +92,7 @@ public class RaftNode {
             createPersistentState();
         }
 
-        log = new ArrayList<>();
+        
         int t;
         int i;
         String method;
@@ -340,7 +348,8 @@ public class RaftNode {
                 if (m.getType().equals("client")){
                     m = messages.poll();
                     // m.log should be the string recieved from client
-                    log.add(new Command(term, log.size(), m.clientRequest, "")); // not sure what body is supposed to be
+                    log.add(new Command(term, log.size(), m.clientRequest, "")); //TODO not sure what body is supposed to be
+                    persistentLog(log.size());
                     // No confirmation to client needed
                 }
                 if (m.getType().equals("appendEntriesResponse")){
