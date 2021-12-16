@@ -244,38 +244,40 @@ public class RaftNode {
                     break;
                 if(m.getType().equals("appendEntries"))
                 {
+                    MessageAppendEntries ae = (MessageAppendEntries) m;
                     //if success
                     int lastNewEntry;
-                    if(term < m.getTerm())
+                    if(term < ae.getTerm())
                     {
-                        term = m.getTerm();
+                        term = ae.getTerm();
                         persistentState(term, votedFor);
                     }
-                    ArrayList<Command> toAdd = m.getEntries();
+                    ArrayList<Command> toAdd = ae.getAllEntries();
                     for(Command c: toAdd)
                     {
                         log.add(c);
                         persistentLog(log.size()-1);
                         lastNewEntry = log.size()-1;
                     }
-                    if(m.getLeaderCommit() > commitIndex)
+                    if(ae.getLeaderCommitIndex() > commitIndex)
                     {
-                        if(m.getLeaderCommit() > lastNewEntry)
+                        if(ae.getLeaderCommitIndex() > lastNewEntry)
                             commitIndex = lastNewEntry;
                         else
-                            commitIndex = m.getLeaderCommit();
+                            commitIndex = ae.getLeaderCommitIndex();
                     }
                     
                     
                 }
                 else if(m.getType().equals("requestVote"))
                 {
+                    MessageRequestVote rv = (MessageRequestVote) m;
                     //verify that response is handled an dwe are granting vote
-                    if(m.getTerm() > term)
+                    if(rv.getTerm() > term)
                     {
-                        term = m.getTerm();
+                        term = rv.getTerm();
                     }
-                    votedFor = m.getCandidate();
+                    votedFor = rv.getCandidateId();
                     persistentState(term, votedFor);
                 }
 
@@ -304,9 +306,11 @@ public class RaftNode {
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
         //term++;
+        Map<String, Long> HeartBeat = new HashMap<>(peers.size());
         Map<String, Integer> nextIndex = new HashMap<>(peers.size());
         Map<String, Integer> matchIndex = new HashMap<>(peers.size());
         for(String peer : peers.keySet()){
+            HeartBeat.put(peer, System.currentTimeMillis());
             nextIndex.put(peer, log.size());
             matchIndex.put(peer, 0);
         }
@@ -340,6 +344,8 @@ public class RaftNode {
             while (commitIndex > lastApplied){
                 parseToKVS(log.get(lastApplied + 1));
                 lastApplied++;
+
+                //need to respond to client here
             }
             // step 2: check to see if any messages or replies are present
             // if so:
@@ -410,20 +416,20 @@ public class RaftNode {
                     }
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
                      logEntriesToAdd, commitIndex);
+                    HeartBeat.put(peer, System.currentTimeMillis());
                     //start = System.currentTimeMillis(); //TODO why update heartbeat timer if only one node is being contacted
                     
                 }
 
             }
             //Heartbeat Timeout
-            if(System.currentTimeMillis() + 5000 > start)
-            {
-                for(String peer : nextIndex.keySet()){ //send heartbeat out to every peer 
-
+            for(String peer : HeartBeat.keySet()){
+                if(System.currentTimeMillis() > HeartBeat.get(peer) + 5000)
+                {
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
+                    HeartBeat.put(peer, System.currentTimeMillis()); // reseting heartbeat timer
                 }
-                start = System.currentTimeMillis();// reseting heartbeat timer
             }
             // step 4: iterate through matchIndex to see if a majority of entries
             //         are > commitIndex (with term that is current). If so, 
