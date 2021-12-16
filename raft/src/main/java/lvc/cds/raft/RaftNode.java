@@ -73,7 +73,7 @@ public class RaftNode {
 
         // a map containing stubs for communicating with each of our peers
         this.peers = new HashMap<>();
-        for (var p : peers) {
+        for (String p : peers) {
             if (!p.equals(me))
                 this.peers.put(p, new PeerStub(p, port, messages));
         }
@@ -169,7 +169,7 @@ public class RaftNode {
     }
 
     private void connectRpcChannels() {
-        for (var peer : peers.values()) {
+        for (PeerStub peer : peers.values()) {
             peer.connect();
         }
         peersConnected = true;
@@ -177,7 +177,7 @@ public class RaftNode {
 
     private void shutdownRpcStubs() {
         try {
-            for (var peer : peers.values()) {
+            for (PeerStub peer : peers.values()) {
                 peer.shutdown();
             }
         } catch (InterruptedException e) {
@@ -324,7 +324,7 @@ public class RaftNode {
         // Maybe create zero parameter constructer appendEntries rpc for heartbeat
         // send a message to every peer for initial heartbeat
         // heartbeat is appendEntries with no log entries
-        for (var peer : peers.keySet()) {
+        for (String peer : peers.keySet()) {
             peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex); 
         }
@@ -478,7 +478,7 @@ public class RaftNode {
         if(votes > (peers.size() +1 / 2.0))
             return NODE_STATE.LEADER;
             
-        for (var peer : peers.values()) {
+        for (PeerStub peer : peers.values()) {
             peer.sendRequestVote(term, me, lastLogIndex, lastLogTerm);
         }
 
