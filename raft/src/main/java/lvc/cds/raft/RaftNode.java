@@ -125,7 +125,7 @@ public class RaftNode {
         
         //what else do we need to send
         // do we need to send term when we have this?
-        rrpc = new RaftRPC(messages, term, this);
+        rrpc = new RaftRPC(messages, this);
         
         
     }
@@ -217,6 +217,14 @@ public class RaftNode {
         // according to the raft rules for followers.
 
         while (true) {
+
+            // If we haven't connected yet...
+            if (!peersConnected)
+            {
+                connectRpcChannels();
+                peersConnected = true;
+            }
+
             heartbeat = 10000 + rand.nextInt(50);
             if(System.currentTimeMillis() - start > heartbeat)
             {
@@ -242,7 +250,6 @@ public class RaftNode {
                     {
                         term = m.getTerm();
                         persistentState(term, votedFor);
-                        rrpc.setTerm(term);
                     }
                     ArrayList<Command> toAdd = m.getEntries();
                     for(Command c: toAdd)
@@ -267,24 +274,23 @@ public class RaftNode {
                     if(m.getTerm() > term)
                     {
                         term = m.getTerm();
-                        rrpc.setTerm(term);
                     }
                     votedFor = m.getCandidate();
                     persistentState(term, votedFor);
                 }
 
+                //message from client
+
 
             }
 
-            //can we commit any new logs?
-            //if(commitIndex < log.size())
 
             //can we apply any new logs?
-            //if(commitIndex > lastApplied)
-
-            // If we haven't connected yet...
-            /*if (!peersConnected)
-                connectRpcChannels();*/
+            if(commitIndex > lastApplied)
+            {
+                parseToKVS(log.get(lastApplied+1));
+                lastApplied++;
+            }
 
 
         }
@@ -297,7 +303,7 @@ public class RaftNode {
         // any setup that is needed before we start out event loop as we just
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
-        term++;
+        //term++;
         Map<String, Integer> nextIndex = new HashMap<>(peers.size());
         Map<String, Integer> matchIndex = new HashMap<>(peers.size());
         for(String peer : peers.keySet()){
@@ -459,6 +465,27 @@ public class RaftNode {
           }
     }
 
+    public void writeLogs()
+    {
+        try {
+            FileWriter myWriter = new FileWriter("persistentLog.txt");
+            for(Command c: log)
+            {
+                myWriter.write("" + c.getTerm());
+                myWriter.write("\n");
+                myWriter.write("" + c.getIndex());
+                myWriter.write("\n");
+                myWriter.write("" + c.getMethod());
+                myWriter.write("\n");
+                myWriter.write("" + c.getBody());
+                myWriter.write("\n");
+            }
+            myWriter.close();
+          } catch (IOException e) {
+
+          }
+    }
+
     public void persistentState(int currentTerm, String votedFor)
     {
         try {
@@ -510,6 +537,7 @@ public class RaftNode {
         {
             log.remove(i);
         }
+        writeLogs();
     }
 
     public int getLogSize()

@@ -13,25 +13,25 @@ import lvc.cds.raft.proto.RaftRPCGrpc.RaftRPCImplBase;
 
 public class RaftRPC extends RaftRPCImplBase {
     ConcurrentLinkedQueue<Message> messages;
-    private int term;
     private RaftNode node;
 
-    public RaftRPC(ConcurrentLinkedQueue<Message> messages, int term, RaftNode node) {
+    public RaftRPC(ConcurrentLinkedQueue<Message> messages, RaftNode node) {
         this.messages = messages;
-        this.term = term;
         this.node = node;
     } 
 
     @Override
     public void appendEntries(AppendEntriesMessage req, StreamObserver<Response> responseObserver) {
         boolean success = true;
-        term = req.getTerm();
+        int term = req.getTerm();
         int prevLogIdx = req.getPrevLogIdx();
         int prevLogTerm = req.getPrevLogTerm();
 
         if (term < node.getTerm() || !node.prevLogExist(prevLogIdx, prevLogTerm)){ // Recevier implementation 1. & 2. in raft paper pg.4
             success = false;
         }
+
+        //if need to delete
 
         if (success){
             String leaderId = req.getLeaderID();
@@ -63,7 +63,7 @@ public class RaftRPC extends RaftRPCImplBase {
 
         int lli = req.getLastLogIndex();
         int llt = req.getLastLogTerm();
-        if(term <= req.getTerm())
+        if(node.getTerm() <= req.getTerm())
         {
             Command c = node.getPrevLog(0);
             if(c.getIndex() <= lli && c.getTerm() <= llt)
@@ -75,9 +75,9 @@ public class RaftRPC extends RaftRPCImplBase {
         if(success)
         {
             String msg = req.getTerm() + " " + req.getCandidateID() + " " + lli + " " + llt;
-            messages.add(new MessageRequestVote(msg));
+            messages.add(new MessageRequestVote(msg, req.getTerm(), req.getCandidateID(), lli, llt));
         }
-        Response reply = Response.newBuilder().setSuccess(success).setTerm(term).build();
+        Response reply = Response.newBuilder().setSuccess(success).setTerm(node.getTerm()).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
     }
@@ -90,10 +90,6 @@ public class RaftRPC extends RaftRPCImplBase {
     }
 
 
-    public void setTerm(int t)
-    {
-        term = t;
-    }
     
 
     

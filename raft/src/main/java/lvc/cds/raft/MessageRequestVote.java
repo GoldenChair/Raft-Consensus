@@ -7,23 +7,14 @@ public class MessageRequestVote extends Message {
     private int lastLogIdx;
     private int lastLogTerm;
 
-    public MessageRequestVote(String message)
+    public MessageRequestVote(String message, int term, String id, int lastIdx, int lastTerm)
     {
         super(message, "requestVote");
 
-        int index = message.indexOf(" ");
-        String subMessage = message.substring(index+1);
-        term = Integer.parseInt(message.substring(0, index));
-
-        index = subMessage.indexOf(" ");
-        candidateId = subMessage.substring(0,index);
-        subMessage = subMessage.substring(index+1);
-
-        index = subMessage.indexOf(" ");
-        lastLogIdx = Integer.parseInt(subMessage.substring(0,index));
-        subMessage = subMessage.substring(index+1);
-
-        lastLogTerm = Integer.parseInt(subMessage);
+        this.term = term;
+        candidateId = id;
+        lastLogIdx = lastIdx;
+        lastLogTerm = lastTerm;
  
     }
 
