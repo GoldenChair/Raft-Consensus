@@ -430,6 +430,7 @@ public class RaftNode {
                         logEntriesToAdd.add(log.get(i).getMethod());
                         logEntriesToAdd.add(log.get(i).getBody());
                     }
+                    System.out.println(logEntriesToAdd.size());
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
                      logEntriesToAdd, commitIndex);
                     HeartBeat.replace(peer, System.currentTimeMillis());
