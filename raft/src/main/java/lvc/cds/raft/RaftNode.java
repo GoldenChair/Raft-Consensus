@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
+import javax.lang.model.util.ElementScanner6;
+
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 // import com.google.protobuf.Message;
@@ -400,6 +402,9 @@ public class RaftNode {
                         break;
                     }
                 }
+                else{
+                    messages.poll();
+                }
 
                 System.out.println("handled message");
                 System.out.println(m.getMsg());
@@ -518,6 +523,9 @@ public class RaftNode {
                 else if(m.getType().equals("requestVote"))
                 {
                     return NODE_STATE.FOLLOWER;
+                }
+                else{
+                    messages.poll();
                 }
 
             }
