@@ -231,7 +231,7 @@ public class RaftNode {
                 peersConnected = true;
             }
 
-            heartbeat = 10000 + rand.nextInt(50);
+            heartbeat = 10000 + rand.nextInt(100);
             if(System.currentTimeMillis() - start > heartbeat)
             {
                 return NODE_STATE.CANDIDATE;
@@ -459,6 +459,8 @@ public class RaftNode {
             for (int mIndex : matchIndex.values()){
                 if (mIndex > commitIndex){counter++;}
             }
+            System.out.println("counter: "+ counter);
+            System.out.println("commitIndex: "+ commitIndex);
             if (log.size() -1 > commitIndex && counter >= ((peers.size() + 1)/2)+1){ commitIndex++;}
         }
 
@@ -508,7 +510,7 @@ public class RaftNode {
                 peersConnected = true;
             }
 
-            heartbeat = 10000 + rand.nextInt(50);
+            heartbeat = 10000 + rand.nextInt(100);
             if(System.currentTimeMillis() - start > heartbeat)
             {
                 return NODE_STATE.CANDIDATE;
