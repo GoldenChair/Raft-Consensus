@@ -23,7 +23,12 @@ def grpcVersion = '1.42.0' // CURRENT_GRPC_VERSION
 def protobufVersion = '3.17.2'
 def protocVersion = protobufVersion
 
-dependencies {
+dependencies 
+{
+    //Compile our local libraries
+    implementation files('lib/test_kvs.jar')
+    implementation files('lib/json-simple-4.0.0.jar')
+
     // Use JUnit test framework.
     testImplementation 'junit:junit:4.13.1'
     testImplementation "io.grpc:grpc-testing:${grpcVersion}"
