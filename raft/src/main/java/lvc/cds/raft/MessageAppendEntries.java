@@ -1,5 +1,7 @@
 package lvc.cds.raft;
 
+import java.util.ArrayList;
+
 public class MessageAppendEntries extends Message{
     
     private int term;
@@ -41,7 +43,7 @@ public class MessageAppendEntries extends Message{
         return prevLogTerm;
     }
 
-    public ArrayList<String> getAllEntries()
+    public ArrayList<Command> getAllEntries()
     {
         return entries;
     }
