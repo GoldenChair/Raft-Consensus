@@ -5,7 +5,7 @@ import lvc.cds.raft.proto.*;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.google.protobuf.Message;
+import com.google.protobuf.Empty;
 import com.google.protobuf.ProtocolStringList;
 
 import io.grpc.stub.StreamObserver;
@@ -46,7 +46,7 @@ public class RaftRPC extends RaftRPCImplBase {
 
             // May be better way to make command using the Entries list of strings
             for(int i = 0; i < req.getEntriesCount(); i += 4 ){ // should always be multiple of 4 as Command is split into 4 pieces
-                commands.add(new Command(commandFields.get(i), commandFields.get(i+1), commandFields.get(i+2), commandFields.get(i+3)));
+                commands.add(new Command(Integer.valueOf(commandFields.get(i)), Integer.valueOf(commandFields.get(i+1)), commandFields.get(i+2), commandFields.get(i+3)));
             }
 
             messages.add(new MessageAppendEntries(msg,term, leaderId, prevLogIdx, prevLogTerm, leaderCommitIndex, commands));
@@ -59,7 +59,7 @@ public class RaftRPC extends RaftRPCImplBase {
     
     @Override
     public void requestVote(RequestVoteMessage req, StreamObserver<Response> responseObserver) {
-        String success = false;
+        boolean success = false;
 
         int lli = req.getLastLogIndex();
         int llt = req.getLastLogTerm();
@@ -84,8 +84,8 @@ public class RaftRPC extends RaftRPCImplBase {
 
     // This should recive a message from client and it to messages
     // should be able to recieve it as clientMessage and message.poll().log
-    @Override
-    public void clientMessage(ClientMessage req, StreamObserver<Response> responseObserver){
+    // @Override
+    public void clientRequest(ClientMessage req, StreamObserver<Empty> responseObserver){
         messages.add(new MessageClient(req.getLog()));
     }
 
