@@ -83,7 +83,7 @@ public class PeerStub {
             public void onNext(Response value) {
                 // we have the peer string (IP address) available here.
                 String msg = "" + peer + " " + value.getTerm() + " " + value.getSuccess();
-                messages.add(new RequestVoteResponse(msg));
+                messages.add(new RequestVoteResponse(msg, value.getTerm(), value.getSuccess(), peer));
             }
 
             @Override

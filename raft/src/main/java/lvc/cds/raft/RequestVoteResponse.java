@@ -6,25 +6,17 @@ public class RequestVoteResponse extends Message{
     private int term;
     private boolean success;
 
-    public RequestVoteResponse(String message)
+    public RequestVoteResponse(String message, int term, boolean s, String peer)
     {
         super(message, "requestVoteResponse");
         
-        int index = message.indexOf(" ");
-        String subMessage = message.substring(index+1);
-        peer = message.substring(0, index);
+        this.term = term;
+        if(s)
+            this.success = true;
+        else
+            this.success = false;
 
-        index = subMessage.indexOf(" ");
-        term = Integer.parseInt(subMessage.substring(0,index));
-        subMessage = subMessage.substring(index+1);
-
-        if(subMessage.equals("1"))
-        {
-            success = true;
-        }
-        else{
-            success = false;
-        }
+        this.peer = peer;
         
     }
 
