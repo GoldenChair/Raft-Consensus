@@ -324,7 +324,7 @@ public class RaftNode {
         // Maybe create zero parameter constructer appendEntries rpc for heartbeat
         // send a message to every peer for initial heartbeat
         // heartbeat is appendEntries with no log entries
-        for (var peer : peers.values()) {
+        for (var peer : peers.keySet()) {
             peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex); 
         }
@@ -479,7 +479,7 @@ public class RaftNode {
             return NODE_STATE.LEADER;
             
         for (var peer : peers.values()) {
-            peers.get(peer).sendRequestVote(term, me, lastLogIndex, lastLogTerm);
+            peer.sendRequestVote(term, me, lastLogIndex, lastLogTerm);
         }
 
         while(true)
