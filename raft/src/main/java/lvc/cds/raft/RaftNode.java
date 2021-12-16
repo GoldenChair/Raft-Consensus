@@ -272,7 +272,7 @@ public class RaftNode {
                         else
                             commitIndex = ae.getLeaderCommitIndex();
                     }
-                    
+                    start = System.currentTimeMillis();
                     
                 }
                 else if(m.getType().equals("requestVote"))
@@ -285,6 +285,7 @@ public class RaftNode {
                     }
                     votedFor = rv.getCandidateId();
                     persistentState(term, votedFor);
+                    start = System.currentTimeMillis();
                 }
 
                 //message from client
