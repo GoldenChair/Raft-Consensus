@@ -418,7 +418,7 @@ public class RaftNode {
                     }
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
                      logEntriesToAdd, commitIndex);
-                    HeartBeat.put(peer, System.currentTimeMillis());
+                    HeartBeat.replace(peer, System.currentTimeMillis());
                     //start = System.currentTimeMillis(); //TODO why update heartbeat timer if only one node is being contacted
                     
                 }
@@ -430,7 +430,7 @@ public class RaftNode {
                 {
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
-                    HeartBeat.put(peer, System.currentTimeMillis()); // reseting heartbeat timer
+                    HeartBeat.replace(peer, System.currentTimeMillis()); // reseting heartbeat timer
                 }
             }
             // step 4: iterate through matchIndex to see if a majority of entries
