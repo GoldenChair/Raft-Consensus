@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.google.gson.JsonObject;
 import com.google.protobuf.Message;
 
 import io.grpc.ManagedChannel;
@@ -512,13 +513,15 @@ public class RaftNode {
     }
 
     public void parseToKVS(Command command){
-        // [0] should be key and [1] should be value
-        // if its a modify request then it should be
-        // [0] = key, [1] = field, [2] = value
+        // [0] should be KEY and [1] should be key and [2] value if add
+        // [0] = KEY if remove
+        // [0] = KEY, [1] = field, [2] = value if modify request
         String[] splited = command.getBody().split(" ");
-
+        
         if(command.getMethod().equals("add")){
-            kvs.add(splited[0], splited[1]);
+            JsonObject hold = new JsonObject();
+            hold.put(splited[1], splited[2]);
+            kvs.add(splited[0], hold);
         }else if(command.getMethod().equals("remove")){
             kvs.remove(splited[0]);
         } else if(command.getMethod().equals("clear")){
