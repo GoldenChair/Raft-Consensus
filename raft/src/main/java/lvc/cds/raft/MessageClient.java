@@ -12,7 +12,7 @@ public class MessageClient extends Message {
  
     }
 
-    public int getClientRequest()
+    public String getClientRequest()
     {
         return clientRequest;
     }
