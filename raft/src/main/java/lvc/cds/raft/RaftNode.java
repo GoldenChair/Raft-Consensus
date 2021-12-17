@@ -151,7 +151,6 @@ public class RaftNode {
         state = NODE_STATE.FOLLOWER;
 
         while (state != NODE_STATE.SHUTDOWN) {
-            System.out.println(state);
             switch (state) {
             case FOLLOWER:
                 state = follower();
@@ -334,12 +333,6 @@ public class RaftNode {
         // send a message to every peer for initial heartbeat
         // heartbeat is appendEntries with no log entries
         for (String peer : peers.keySet()) {
-            System.out.println("term :" + term);
-            System.out.println("leaderid :" + leaderId);
-            System.out.println("prevlogindex :" + String.valueOf(nextIndex.get(peer) - 1));
-            System.out.println("prev logTerm: " + String.valueOf(log.get(nextIndex.get(peer) - 1).getTerm()));
-            System.out.println("entries" + new ArrayList<String>());
-            System.out.println("leadercommitindex :" + String.valueOf(commitIndex));
             peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex); 
         }
@@ -358,7 +351,6 @@ public class RaftNode {
         while (true) {
             // step one: check out commitIndex to see if we can commit any
             // logs. As we commit logs, Increase lastApplied
-            //System.out.print(commitIndex + " " + lastApplied);
             while (commitIndex > lastApplied){
                 parseToKVS(log.get(lastApplied + 1));
                 lastApplied++;
@@ -380,7 +372,6 @@ public class RaftNode {
             if (m != null) {
                 if (m.getMsg().equals(""))
                     break;
-                System.out.println(m.getType());
                 if (m.getType().equals("client")){
                     MessageClient cM = (MessageClient) messages.poll();
                     // split(" , 2") should give list with [0] = method and [1] = body
@@ -425,9 +416,6 @@ public class RaftNode {
                 else{
                     messages.poll();
                 }
-
-                System.out.println("handled message");
-                System.out.println(m.getMsg());
             } 
             // step 3: see if we need to send any messages out. Iterate through
             //         nextIndex and send an appendEntries message to anyone who 
@@ -444,7 +432,6 @@ public class RaftNode {
                             logEntriesToAdd.add(log.get(i).getMethod());
                             logEntriesToAdd.add(log.get(i).getBody());
                         }
-                        System.out.println(logEntriesToAdd.size());
                         peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(),
                         logEntriesToAdd, commitIndex);
                         HeartBeat.replace(peer, System.currentTimeMillis());
@@ -458,7 +445,6 @@ public class RaftNode {
             for(String peer : HeartBeat.keySet()){
                 if(System.currentTimeMillis() > HeartBeat.get(peer) + 10000)
                 {
-                    System.out.println(nextIndex.get(peer) - 1);
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
                     HeartBeat.replace(peer, System.currentTimeMillis()); // reseting heartbeat timer
@@ -471,11 +457,8 @@ public class RaftNode {
             int counter = 1; // 1 because of counting self as part of majority
             for (int mIndex : matchIndex.values())
             {
-                System.out.println("mIndex:" + mIndex);
                 if (mIndex > commitIndex){counter++;}
             }
-            System.out.println("counter: "+ counter);
-            System.out.println("commitIndex: "+ commitIndex);
             if (log.size() -1 > commitIndex && counter >= ((peers.size() + 1)/2)+1){ commitIndex++;}
         }
 
@@ -506,7 +489,6 @@ public class RaftNode {
             lastLogIndex = 0;
             lastLogTerm = 0;
         }
-        System.out.println(peers.size());
 
 
         if(votes > (peers.size() +1 / 2.0))

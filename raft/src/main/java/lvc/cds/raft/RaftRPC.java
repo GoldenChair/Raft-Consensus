@@ -71,7 +71,6 @@ public class RaftRPC extends RaftRPCImplBase {
         {
             Command c = node.getPrevLog(0);
 
-            System.out.println(c.getIndex() + " <= " + lli + ", " + c.getTerm() + "<= "+ llt);
             if(c.getIndex() <= lli && c.getTerm() <= llt)
             {
                 success = true;
