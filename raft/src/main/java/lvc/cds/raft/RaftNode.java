@@ -401,6 +401,7 @@ public class RaftNode {
                         {
                             term = aerM.getTerm();
                             persistentState(term, votedFor);
+                            return NODE_STATE.FOLLOWER;
                         }
                         nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) - 1);
                     }
