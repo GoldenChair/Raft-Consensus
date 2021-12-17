@@ -236,7 +236,7 @@ public class RaftNode {
                 peersConnected = true;
             }
 
-            heartbeat = 15000 + rand.nextInt(100);
+            heartbeat = 25000 + rand.nextInt(1500);
             if(System.currentTimeMillis() - start > heartbeat)
             {
                 return NODE_STATE.CANDIDATE;
@@ -523,7 +523,7 @@ public class RaftNode {
                 peersConnected = true;
             }
 
-            heartbeat = 15000 + rand.nextInt(100);
+            heartbeat = 25000 + rand.nextInt(1500);
             if(System.currentTimeMillis() - start > heartbeat)
             {
                 return NODE_STATE.CANDIDATE;
