@@ -224,6 +224,7 @@ public class RaftNode {
         Random rand = new Random();
         long heartbeat;
         long start = System.currentTimeMillis();
+        long diag = System.currentTimeMillis();
         // an event loop that processes incoming messages and timeout events
         // according to the raft rules for followers.
 
@@ -298,10 +299,11 @@ public class RaftNode {
 
             }
 
-            if(start + 5000 > System.currentTimeMillis())
+            if(diag + 5000 > System.currentTimeMillis())
             {
                 System.out.println("CommitIndex: " + commitIndex);
                 System.out.println("LastApplied: " + lastApplied);
+                diag = System.currentTimeMillis();
             }
 
 
