@@ -61,8 +61,6 @@ public class PeerStub {
             @Override
             public void onError(Throwable t) {
                 messages.add(new Message("error","error handling response"));
-                connect();
-                System.out.println("AppendEntries Error Message");
             }
 
             @Override
