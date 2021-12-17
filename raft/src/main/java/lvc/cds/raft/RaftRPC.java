@@ -35,7 +35,7 @@ public class RaftRPC extends RaftRPCImplBase {
         if (prevLogIdx < node.getLogSize() && node.getLog(prevLogIdx).getTerm() != prevLogTerm){
             node.deleteLog(prevLogIdx);
         }
-        
+        System.out.println("Append Entries: " + success);
         Response reply = Response.newBuilder().setSuccess(success).setTerm(node.getTerm()).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();

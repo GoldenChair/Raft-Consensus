@@ -457,6 +457,8 @@ public class RaftNode {
             for(String peer : nextIndex.keySet()){
                 if(System.currentTimeMillis() > HeartBeat.get(peer) + 8000) {
                     if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
+                        peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
+                        , commitIndex);
                         ArrayList<String> logEntriesToAdd = new ArrayList<>();
                         for(int i = nextIndex.get(peer); i <= log.size() - 1; i++){ // assuming log first index is 1
                             logEntriesToAdd.add(String.valueOf(log.get(i).getTerm()));
