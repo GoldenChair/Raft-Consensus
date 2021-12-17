@@ -520,6 +520,12 @@ public class RaftNode {
                 if(m.getType().equals("requestVoteResponse"))
                 {
                     RequestVoteResponse vr = (RequestVoteResponse) messages.poll();
+                    if(vr.getTerm() > term)
+                    {
+                        term = vr.getTerm();
+                        persistentState(term, votedFor);
+                        return NODE_STATE.FOLLOWER;
+                    }
                     if(vr.getSuccess())
                         votes++;
                     if(votes > (peers.size() +1) / 2.0)
