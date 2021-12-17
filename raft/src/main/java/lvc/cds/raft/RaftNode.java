@@ -397,7 +397,11 @@ public class RaftNode {
                         nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) + aerM.getSize());
                     }
                     else if (!aerM.getSuccess()){ // decrement if success is false
-                        term = aerM.getTerm();
+                        if(term < aerM.getTerm())
+                        {
+                            term = aerM.getTerm();
+                            persistentState(term, votedFor);
+                        }
                         nextIndex.replace(aerM.getPeer(), nextIndex.get(aerM.getPeer()) - 1);
                     }
                 }
