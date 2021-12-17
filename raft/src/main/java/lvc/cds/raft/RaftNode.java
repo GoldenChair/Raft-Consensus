@@ -299,7 +299,7 @@ public class RaftNode {
 
             }
 
-            if(diag + 5000 > System.currentTimeMillis())
+            if((diag + 10000) < System.currentTimeMillis())
             {
                 System.out.println("CommitIndex: " + commitIndex);
                 System.out.println("LastApplied: " + lastApplied);
@@ -372,7 +372,7 @@ public class RaftNode {
                 //need to respond to client here
             }
 
-            if(start + 5000 > System.currentTimeMillis())
+            if(start + 5000 < System.currentTimeMillis())
             {
                 System.out.println("CommitIndex: " + commitIndex);
                 System.out.println("LastApplied: " + lastApplied);
