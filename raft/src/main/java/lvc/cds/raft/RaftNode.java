@@ -298,6 +298,13 @@ public class RaftNode {
 
             }
 
+            if(start + 5000 > System.currentTimeMillis())
+            {
+                System.out.println("CommitIndex: " + commitIndex);
+                System.out.println("LastApplied: " + lastApplied);
+            }
+
+
 
             //can we apply any new logs?
             if(commitIndex > lastApplied)
@@ -310,9 +317,10 @@ public class RaftNode {
         }
         return NODE_STATE.CANDIDATE;
     }
-
+    long start = System.currentTimeMillis();
     // lo
     private NODE_STATE leader() {
+        
         // any setup that is needed before we start out event loop as we just
         // became leader. For instance, initialize the nextIndex and matchIndex
         // hashmaps.
@@ -355,9 +363,30 @@ public class RaftNode {
             while (commitIndex > lastApplied){
                 parseToKVS(log.get(lastApplied + 1));
                 lastApplied++;
+                
+
+
 
                 //need to respond to client here
             }
+
+            if(start + 5000 > System.currentTimeMillis())
+            {
+                System.out.println("CommitIndex: " + commitIndex);
+                System.out.println("LastApplied: " + lastApplied);
+                System.out.print("NextIndex: ");
+                for (String peer : peers.keySet()) {
+                    System.out.println(nextIndex.get(peer) + ", ");
+                }
+                System.out.print("\nMatchIndex: ");
+                for (String peer : peers.keySet()) {
+                    System.out.println(matchIndex.get(peer) + ", ");
+                }
+                start = System.currentTimeMillis();
+            }
+
+
+
             // step 2: check to see if any messages or replies are present
             // if so:
             //    - if it is a request from a client, then add to our log

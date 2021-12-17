@@ -15,9 +15,9 @@ public class App {
             String me = InetAddress.getLocalHost().getHostAddress();
             System.out.println(me);
             ArrayList<String> peers = new ArrayList<>();
-            peers.add("10.1.23.52");
-            peers.add("10.1.23.53");
-            peers.add("10.1.23.54");
+            peers.add("10.1.23.65");
+            peers.add("10.1.23.66");
+            peers.add("10.1.23.67");
 
             RaftNode node = new RaftNode(PORT, me, peers);
 
