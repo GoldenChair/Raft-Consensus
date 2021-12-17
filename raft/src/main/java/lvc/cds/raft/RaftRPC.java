@@ -35,11 +35,6 @@ public class RaftRPC extends RaftRPCImplBase {
         if (prevLogIdx < node.getLogSize() && node.getLog(prevLogIdx).getTerm() != prevLogTerm){
             node.deleteLog(prevLogIdx);
         }
-
-        if(node.getState().equals("candidate") && req.getLeaderCommitIdx() > node.getCommit())
-        {
-            success = true;
-        }
         
 
         if (success){
