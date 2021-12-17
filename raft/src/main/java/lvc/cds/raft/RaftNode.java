@@ -461,7 +461,9 @@ public class RaftNode {
             //         ++commitIndex. There are more aggressive ways to do this,
             //         but this will do.
             int counter = 1; // 1 because of counting self as part of majority
-            for (int mIndex : matchIndex.values()){
+            for (int mIndex : matchIndex.values())
+            {
+                System.out.println("mIndex:" + mIndex);
                 if (mIndex > commitIndex){counter++;}
             }
             System.out.println("counter: "+ counter);
