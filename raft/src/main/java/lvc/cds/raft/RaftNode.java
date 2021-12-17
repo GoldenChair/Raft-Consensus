@@ -237,7 +237,7 @@ public class RaftNode {
                 peersConnected = true;
             }
 
-            heartbeat = 25000 + rand.nextInt(1500);
+            heartbeat = 10000 + rand.nextInt(1500);
             if(System.currentTimeMillis() - start > heartbeat)
             {
                 return NODE_STATE.CANDIDATE;
@@ -458,7 +458,7 @@ public class RaftNode {
             //         a message to everyone. if we do send an appendEntries, 
             //         update the heartbeat timer.
             for(String peer : nextIndex.keySet()){
-                if(System.currentTimeMillis() > HeartBeat.get(peer) + 8000) {
+                if(System.currentTimeMillis() > HeartBeat.get(peer) + 2500) {
                     if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
                         peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                         , commitIndex);
@@ -480,7 +480,7 @@ public class RaftNode {
             }
             //Heartbeat Timeout
             for(String peer : HeartBeat.keySet()){
-                if(System.currentTimeMillis() > HeartBeat.get(peer) + 10000)
+                if(System.currentTimeMillis() > HeartBeat.get(peer) + 5000)
                 {
                     peers.get(peer).sendAppendEntries(term, leaderId, nextIndex.get(peer) - 1, log.get(nextIndex.get(peer) - 1).getTerm(), new ArrayList<String>()//empty entries for heartbeat
                     , commitIndex);
@@ -545,7 +545,7 @@ public class RaftNode {
                 peersConnected = true;
             }
 
-            heartbeat = 30000 + rand.nextInt(1500);
+            heartbeat = 12000 + rand.nextInt(1500);
             if(System.currentTimeMillis() - start > heartbeat)
             {
                 return NODE_STATE.CANDIDATE;
