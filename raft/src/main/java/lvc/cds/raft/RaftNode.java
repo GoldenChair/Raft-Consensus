@@ -317,7 +317,7 @@ public class RaftNode {
         }
         return NODE_STATE.CANDIDATE;
     }
-    long start = System.currentTimeMillis();
+
     // lo
     private NODE_STATE leader() {
         
@@ -346,7 +346,7 @@ public class RaftNode {
                     , commitIndex); 
         }
 
-
+        long start = System.currentTimeMillis();
         // notes: We have decisions to make regarding things like: how many queues do
         // we want (one is workable, but several (e.g., one for client messages, one 
         // for incoming raft messages, one for replies) may be easier to reason about).
