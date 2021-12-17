@@ -267,9 +267,12 @@ public class RaftNode {
                     ArrayList<Command> toAdd = ae.getAllEntries();
                     for(Command c: toAdd)
                     {
-                        log.add(c);
-                        persistentLog(log.size()-1);
-                        lastNewEntry = log.size()-1;
+                        if(c.getIndex() < log.size())
+                        {
+                            log.add(c);
+                            persistentLog(log.size()-1);
+                            lastNewEntry = log.size()-1;
+                        }
                     }
                     if(ae.getLeaderCommitIndex() > commitIndex)
                     {
