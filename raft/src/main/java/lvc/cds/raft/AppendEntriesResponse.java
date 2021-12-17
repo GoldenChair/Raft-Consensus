@@ -6,9 +6,10 @@ public class AppendEntriesResponse extends Message{
     private boolean success;
     private String peer;
     private int size;
+    private int prevLogIdx;
 
 
-    public AppendEntriesResponse(String message, int term, boolean success, String peer, int size)
+    public AppendEntriesResponse(String message, int term, boolean success, String peer, int size, int prevLogIdx)
     {
         super(message, "appendEntriesResponse");
         
@@ -16,6 +17,7 @@ public class AppendEntriesResponse extends Message{
         this.term = term;
         this.success = success;
         this.size = size;
+        this.prevLogIdx = prevLogIdx;
     }
 
 
@@ -37,6 +39,11 @@ public class AppendEntriesResponse extends Message{
     public int getSize()
     {
         return size;
+    }
+
+    public int getPrevLogIdx()
+    {
+        return prevLogIdx;
     }
     
 }
