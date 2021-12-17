@@ -65,7 +65,7 @@ public class PeerStub {
 
             @Override
             public void onCompleted() {
-                System.err.println("stream observer onCompleted");
+            //    System.err.println("stream observer onCompleted");
             }
         });
 
@@ -93,7 +93,7 @@ public class PeerStub {
 
             @Override
             public void onCompleted() {
-                System.err.println("stream observer onCompleted");
+                //System.err.println("stream observer onCompleted");
             }
         });
     }
