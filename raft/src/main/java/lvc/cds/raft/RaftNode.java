@@ -428,7 +428,7 @@ public class RaftNode {
             //         a message to everyone. if we do send an appendEntries, 
             //         update the heartbeat timer.
             for(String peer : nextIndex.keySet()){
-                if(System.currentTimeMillis() > HeartBeat.get(peer) + 2500) {
+                if(System.currentTimeMillis() > HeartBeat.get(peer) + 5000) {
                     if (nextIndex.get(peer) <= log.size() - 1){ // if the next to send to peer value is <= latest entry to log(log.size() - 1)
                         ArrayList<String> logEntriesToAdd = new ArrayList<>();
                         for(int i = nextIndex.get(peer); i <= log.size() - 1; i++){ // assuming log first index is 1
