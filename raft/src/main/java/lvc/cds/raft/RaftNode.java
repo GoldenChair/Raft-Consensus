@@ -81,6 +81,11 @@ public class RaftNode {
         }
 
         this.peersConnected = false;
+        if (!peersConnected)
+        {
+            connectRpcChannels();
+            peersConnected = true;
+        }
 
         //volatile
         commitIndex = 0;
@@ -668,6 +673,26 @@ public class RaftNode {
             return false;
         }
         return true;
+    }
+
+    public int getCommit()
+    {
+        return commitIndex;
+    }
+
+    public String getState()
+    {
+        switch (state) {
+            case FOLLOWER:
+                return "follower";
+            case LEADER:
+                return "leader";
+            case CANDIDATE:
+                return "candidate";
+            case SHUTDOWN:
+                return "";
+            }
+        return "";
     }
 
     public void parseToKVS(Command command){
