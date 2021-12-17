@@ -36,6 +36,9 @@ public class RaftRPC extends RaftRPCImplBase {
             node.deleteLog(prevLogIdx);
         }
         
+        Response reply = Response.newBuilder().setSuccess(success).setTerm(node.getTerm()).build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
 
         if (success){
             String leaderId = req.getLeaderID();
@@ -56,9 +59,7 @@ public class RaftRPC extends RaftRPCImplBase {
             messages.add(new MessageAppendEntries(msg,term, leaderId, prevLogIdx, prevLogTerm, leaderCommitIndex, commands));
         }
 
-        Response reply = Response.newBuilder().setSuccess(success).setTerm(node.getTerm()).build();
-        responseObserver.onNext(reply);
-        responseObserver.onCompleted();
+        
     }
     
     @Override
