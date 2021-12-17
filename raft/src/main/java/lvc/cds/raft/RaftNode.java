@@ -415,7 +415,9 @@ public class RaftNode {
                     //TODO Does anything happen when terms or equal or less then?
                 } else if(m.getType().equals("requestVote")){
                     MessageRequestVote rvM = (MessageRequestVote) m;
-                    if (rvM.getTerm() > term){ // we dont do messages.poll() so message can stay on queue
+                    if (rvM.getTerm() > term){ 
+                        term = rvM.getTerm();
+                        persistentState(term,votedFor);
                         state = NODE_STATE.FOLLOWER;
                         break;
                     }
